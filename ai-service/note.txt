@@ -1,0 +1,6 @@
+.venv\Scripts\activate
+uvicorn main:app --reload --host 127.0.0.1 --port 8080
+
+chroma run --path ./chroma_db --port 8001
+
+qwen3-embedding:0.6b
