@@ -1,13 +1,13 @@
-@if(!request()->is('chat'))
 <!-- Footer -->
 <footer class="bg-white border-t border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 py-12 mt-auto">
     <div class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+        <!-- Col 1: Brand & Contact -->
         <div>
             <div class="mb-4">
                 <img src="{{ asset('images/logoSTMIK.png') }}" alt="Logo STMIK Bandung"
                     class="h-10 w-auto object-contain">
             </div>
-            <div class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400 mt-4">
+            <div class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
                 <div class="flex items-start gap-2.5">
                     <flux:icon name="map-pin" class="w-4 h-4 mt-0.5 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
                     <span>Jl. Cikutra No.113, Bandung, Kota Bandung, Jawa Barat 40124, Indonesia</span>
@@ -18,27 +18,52 @@
                 </div>
                 <div class="flex items-center gap-2.5">
                     <flux:icon name="envelope" class="w-4 h-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
-                    <a href="mailto:marketing@stmik-bandung.ac.id" class="hover:underline">marketing@stmik-bandung.ac.id</a>
+                    <a href="mailto:marketing@stmik-bandung.ac.id" class="hover:underline hover:text-[#F9CE04]">marketing@stmik-bandung.ac.id</a>
                 </div>
             </div>
         </div>
+
+        <!-- Col 2: STMIK Bandung Sub Links -->
         <div>
-            <h3 class="font-semibold text-sm text-[#1B287D] mb-4 uppercase tracking-wider">STMIK Bandung</h3>
-            <ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-                <li><a href="https://stmik-bandung.ac.id/" target="_blank" class="hover:text-[#F9CE04]">Situs Utama</a></li>
-                <li><a href="https://journal.stmik-bandung.ac.id/index.php/JurnalTI" target="_blank" class="hover:text-[#F9CE04]">Jurnal</a></li>
-                <li><a href="https://stmik-bandung.merdeka.academy/" target="_blank" class="hover:text-[#F9CE04]">Mata Kuliah</a></li>
+            <h3 class="font-semibold text-sm text-[#1B287D] dark:text-[#F9CE04] mb-4 uppercase tracking-wider">STMIK Bandung</h3>
+            <ul class="space-y-2.5 text-sm text-zinc-600 dark:text-zinc-400">
+                <li class="flex items-center gap-2 group">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#1B287D] group-hover:bg-[#F9CE04] transition-colors"></span>
+                    <a href="https://stmik-bandung.ac.id/" target="_blank" class="hover:text-[#F9CE04] transition-colors">Situs Utama</a>
+                </li>
+                <li class="flex items-center gap-2 group">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#1B287D] group-hover:bg-[#F9CE04] transition-colors"></span>
+                    <a href="https://pmb.stmikbandung.ac.id" target="_blank" class="hover:text-[#F9CE04] transition-colors">Pendaftaran PMB STMIK Bandung</a>
+                </li>
+                <li class="flex items-center gap-2 group">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#1B287D] group-hover:bg-[#F9CE04] transition-colors"></span>
+                    <a href="https://journal.stmik-bandung.ac.id/index.php/JurnalTI" target="_blank" class="hover:text-[#F9CE04] transition-colors">Jurnal</a>
+                </li>
+                <li class="flex items-center gap-2 group">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#1B287D] group-hover:bg-[#F9CE04] transition-colors"></span>
+                    <a href="https://stmik-bandung.merdeka.academy/" target="_blank" class="hover:text-[#F9CE04] transition-colors">Mata Kuliah</a>
+                </li>
             </ul>
         </div>
+
+        <!-- Col 3: Tautan Sub Links -->
         <div>
-            <h3 class="font-semibold text-sm text-[#1B287D] mb-4 uppercase tracking-wider">Tautan</h3>
-            <ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-                <li><a href="/" wire:navigate class="hover:text-[#F9CE04]">Beranda</a></li>
-                <li><a href="https://pmb.stmikbandung.ac.id" target="_blank" class="hover:text-[#F9CE04]">Pendaftaran Online</a></li>
+            <h3 class="font-semibold text-sm text-[#1B287D] dark:text-[#F9CE04] mb-4 uppercase tracking-wider">Tautan</h3>
+            <ul class="space-y-2.5 text-sm text-zinc-600 dark:text-zinc-400">
+                <li class="flex items-center gap-2 group">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#1B287D] group-hover:bg-[#F9CE04] transition-colors"></span>
+                    <a href="/" wire:navigate class="hover:text-[#F9CE04] transition-colors">Home</a>
+                </li>
+                <li class="flex items-center gap-2 group">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#1B287D] group-hover:bg-[#F9CE04] transition-colors"></span>
+                    <a href="{{ route('chat') }}" wire:navigate class="hover:text-[#F9CE04] transition-colors">Chatbot</a>
+                </li>
             </ul>
         </div>
+
+        <!-- Col 4: Sosial Media -->
         <div>
-            <h3 class="font-semibold text-sm text-[#1B287D] mb-4 uppercase tracking-wider">Sosial Media</h3>
+            <h3 class="font-semibold text-sm text-[#1B287D] dark:text-[#F9CE04] mb-4 uppercase tracking-wider">Sosial Media</h3>
             <div class="flex space-x-3 items-center">
                 <a href="https://youtube.com" target="_blank"
                     class="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1B287D] text-white hover:bg-[#F9CE04] hover:text-[#1B287D] hover:-translate-y-1 transition-all duration-300 shadow-sm">
@@ -76,9 +101,10 @@
     </div>
 </footer>
 
+@if(!request()->is('chat'))
 <!-- Mobile Floating Chat Button -->
 <div class="lg:hidden fixed bottom-6 right-6 z-50">
-    <flux:button href="#chatbot-sidebar" variant="primary" icon="chat-bubble-left-ellipsis"
+    <flux:button href="{{ route('chat') }}" wire:navigate variant="primary" icon="chat-bubble-left-ellipsis"
         class="!bg-[#F9CE04] !text-[#1B287D] !border-0 hover:!bg-[#e0ba03] hover:!text-[#1B287D] rounded-full h-14 w-14 shadow-lg hover:scale-105 transition-transform" />
 </div>
 @endif

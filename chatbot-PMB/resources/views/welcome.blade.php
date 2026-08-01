@@ -1,22 +1,30 @@
-<x-layouts.landing title="PMB STMIK Bandung - Knowledge & Entrepreneurship University">
+<x-layouts.landing title="AI Assistant PMB STMIK Bandung - Pusat Layanan Informasi Pendaftaran">
     <div class="space-y-20 pb-20">
         <!-- Hero Section -->
         <section>
-            <div class="bg-[#1B287D] rounded-3xl p-8 lg:p-16 flex flex-col md:flex-row items-center justify-between text-white overflow-hidden relative">
-                <div class="relative z-10 max-w-2xl">
-                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
-                        Selamat datang di PMB <br class="hidden lg:block" />
-                        STMIK Bandung
+            <div class="bg-[#1B287D] rounded-3xl p-8 lg:p-14 flex flex-col md:flex-row items-center justify-between text-white overflow-hidden relative shadow-lg border border-blue-900/50">
+                <div class="relative z-10 max-w-2xl space-y-6">
+                    <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight text-white">
+                        Layanan Informasi PMB <br class="hidden lg:block" />
+                        <span class="text-[#F9CE04]">STMIK Bandung</span>
                     </h1>
-                    <p class="text-lg md:text-xl text-[#BCC3FF] mb-10 max-w-xl">
-                        Knowledge & Entrepreneurship University
+
+                    <p class="text-base md:text-lg text-[#BCC3FF] leading-relaxed max-w-xl">
+                        Tanyakan apa saja seputar pendaftaran, rincian biaya kuliah, beasiswa, dan program studi secara cepat, akurat, dan interaktif bersama AI Assistant kami.
                     </p>
-                    <div class="flex flex-col sm:flex-row gap-4">
+
+                    <div class="flex flex-col sm:flex-row gap-4 pt-2">
                         <flux:button variant="primary"
-                            class="!bg-[#F9CE04] !text-[#1B287D] !border-[#F9CE04] hover:!bg-[#e0ba03] hover:!text-[#1B287D] px-8 py-3 h-auto text-lg rounded-xl shadow-md font-semibold w-full sm:w-auto"
+                            class="!bg-[#F9CE04] !text-[#1B287D] !border-[#F9CE04] hover:!bg-[#e0ba03] hover:!text-[#1B287D] px-8 py-3.5 h-auto text-base rounded-xl shadow-md font-bold w-full sm:w-auto"
                             href="https://pmb.stmikbandung.ac.id" target="_blank">
-                            Daftar Sekarang
+                            Daftar PMB Sekarang
                             <flux:icon name="arrow-right" class="w-5 h-5 ml-2" />
+                        </flux:button>
+
+                        <flux:button href="{{ route('chat') }}" wire:navigate
+                            class="lg:hidden !bg-white/15 backdrop-blur-md !text-white !border border-white/30 hover:!bg-white/25 px-6 py-3.5 h-auto text-base rounded-xl font-bold w-full flex items-center justify-center gap-2">
+                            <flux:icon name="sparkles" class="w-5 h-5 text-[#F9CE04]" />
+                            <span>Tanya AI Chatbot</span>
                         </flux:button>
                     </div>
                 </div>

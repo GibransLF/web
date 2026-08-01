@@ -21,10 +21,8 @@ new class extends Component {
         }
         $this->guestId = session('pmb_guest_id');
 
-        $setting = ChatbotSetting::first();
-        if ($setting) {
-            $this->maxCharacter = $setting->max_input_character;
-        }
+        $setting = ChatbotSetting::current();
+        $this->maxCharacter = $setting->max_input_character;
 
         // Count messages sent by this guest session
         if (!auth()->check()) {
@@ -37,6 +35,7 @@ new class extends Component {
                 'role' => 'ai',
                 'content' => "Halo! 👋 Selamat datang di PMB STMIK Bandung.\nSaya AI Asisten Akademik PMB yang siap membantu Anda menjawab pertanyaan seputar pendaftaran, biaya kuliah, program studi, dan fasilitas kampus.\n\nAda yang bisa saya bantu?",
                 'sources' => [],
+                'time' => now()->format('H:i'),
             ]
         ];
     }
@@ -59,11 +58,14 @@ new class extends Component {
             $cleanInput = mb_substr($cleanInput, 0, $this->maxCharacter);
         }
 
+        $currentTime = now()->format('H:i');
+
         // Add User Message
         $this->messages[] = [
             'role' => 'user',
             'content' => $cleanInput,
             'sources' => [],
+            'time' => $currentTime,
         ];
 
         $userQuestion = $cleanInput;
@@ -81,6 +83,7 @@ new class extends Component {
             'role' => 'ai',
             'content' => $aiAnswer['text'],
             'sources' => $aiAnswer['sources'],
+            'time' => now()->format('H:i'),
         ];
 
         // Save to PostgreSQL chat_histories table
@@ -189,26 +192,17 @@ new class extends Component {
         class="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-50 dark:bg-zinc-800/50">
         @foreach($messages as $msg)
             @if($msg['role'] === 'ai')
-                <div class="flex flex-col items-start max-w-[88%] space-y-1">
-                    <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-4 py-3 rounded-2xl rounded-tl-sm text-sm border border-zinc-200 dark:border-zinc-700 shadow-xs leading-relaxed whitespace-pre-line">
-                        {{ $msg['content'] }}
+                <div class="flex flex-col items-start max-w-[85%] space-y-1">
+                    <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-[13px] border border-zinc-200 dark:border-zinc-700 shadow-sm leading-relaxed whitespace-pre-line">{{ trim($msg['content']) }}</div>
+                    <div class="px-1">
+                        <span class="text-[10px] text-zinc-400 font-medium">{{ $msg['time'] ?? now()->format('H:i') }}</span>
                     </div>
-                    @if(!empty($msg['sources']))
-                        <div class="flex flex-wrap gap-1 items-center px-1">
-                            <span class="text-[10px] text-zinc-400">Sumber:</span>
-                            @foreach($msg['sources'] as $src)
-                                <span class="inline-flex items-center gap-1 bg-blue-50 dark:bg-zinc-700 text-[#1B287D] dark:text-[#F9CE04] text-[10px] px-2 py-0.5 rounded-md font-medium border border-blue-100 dark:border-zinc-600">
-                                    <flux:icon name="document-text" class="w-3 h-3" />
-                                    {{ $src }}
-                                </span>
-                            @endforeach
-                        </div>
-                    @endif
                 </div>
             @else
-                <div class="flex flex-col items-end max-w-[85%] ml-auto">
-                    <div class="bg-[#1B287D] text-white px-4 py-3 rounded-2xl rounded-tr-sm text-sm shadow-xs leading-relaxed whitespace-pre-line">
-                        {{ $msg['content'] }}
+                <div class="flex flex-col items-end max-w-[85%] ml-auto space-y-1">
+                    <div class="bg-[#1B287D] text-white px-3.5 py-2.5 rounded-2xl rounded-tr-sm text-[13px] shadow-sm leading-relaxed whitespace-pre-line">{{ trim($msg['content']) }}</div>
+                    <div class="px-1 text-right">
+                        <span class="text-[10px] text-zinc-400 font-medium">{{ $msg['time'] ?? now()->format('H:i') }}</span>
                     </div>
                 </div>
             @endif
@@ -216,7 +210,7 @@ new class extends Component {
 
         <!-- Typing Indicator -->
         <div x-show="loading" class="flex flex-col items-start max-w-[85%]">
-            <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-4 py-3 rounded-2xl rounded-tl-sm text-sm border border-zinc-200 dark:border-zinc-700 shadow-xs flex items-center gap-1.5 min-h-[40px]">
+            <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-[13px] border border-zinc-200 dark:border-zinc-700 shadow-sm flex items-center gap-1.5 min-h-[38px]">
                 <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce"></span>
                 <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce [animation-delay:0.2s]"></span>
                 <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce [animation-delay:0.4s]"></span>
@@ -227,20 +221,16 @@ new class extends Component {
     <!-- Input Area -->
     <div class="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         @if($this->isGuestLimitReached())
-            <div class="mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 text-xs text-amber-800 dark:text-amber-200 flex flex-col sm:flex-row items-center justify-between gap-2">
-                <span>Batas {{ $guestMaxLimit }} kali pesan tamu telah tercapai. Silakan login untuk melanjutkan.</span>
-                <div class="flex items-center gap-2 shrink-0">
-                    <a href="{{ route('login') }}" wire:navigate class="font-bold text-[#1B287D] dark:text-[#F9CE04] hover:underline">Masuk</a>
-                    <span>|</span>
-                    <a href="{{ route('register') }}" wire:navigate class="font-bold text-[#1B287D] dark:text-[#F9CE04] hover:underline">Daftar</a>
-                </div>
+            <div class="mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                <flux:icon name="clock" class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>Batas {{ $guestMaxLimit }} kali pesan tamu telah tercapai. Silakan tunggu beberapa saat (-/+ 2 jam).</span>
             </div>
         @endif
 
         <form wire:submit.prevent="sendMessage" @submit="loading = true; $nextTick(() => scrollToBottom())" class="flex items-center gap-2">
             <div class="relative flex-1">
-                <flux:input wire:model="message" maxlength="{{ $maxCharacter }}" wire:keydown.enter.prevent="sendMessage" wire:loading.attr="disabled" :disabled="$this->isGuestLimitReached()" placeholder="{{ $this->isGuestLimitReached() ? 'Batas pesan tamu tercapai. Silakan login.' : 'Tulis pesan Anda di sini...' }}"
-                    class="pr-10 bg-[#F5F5F5] border-zinc-200 focus:border-[#1B287D] dark:bg-zinc-800 dark:border-zinc-700 w-full rounded-lg disabled:opacity-60 disabled:cursor-not-allowed" />
+                <flux:input wire:model="message" maxlength="{{ $maxCharacter }}" wire:keydown.enter.prevent="sendMessage" wire:loading.attr="disabled" :disabled="$this->isGuestLimitReached()" placeholder="{{ $this->isGuestLimitReached() ? 'Batas pesan tamu tercapai. Silakan tunggu beberapa saat.' : 'Tulis pesan Anda di sini (maks ' . $maxCharacter . ' karakter)...' }}"
+                    class="pr-10 bg-[#F5F5F5] border-zinc-200 focus:border-[#1B287D] dark:bg-zinc-800 dark:border-zinc-700 w-full rounded-lg disabled:opacity-60 disabled:cursor-not-allowed text-sm" />
                 <button type="submit" wire:loading.attr="disabled" :disabled="$this->isGuestLimitReached()"
                     class="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#1B287D] dark:hover:text-[#F9CE04] transition-colors p-1 disabled:opacity-40 disabled:cursor-not-allowed"
                     aria-label="Kirim pesan">
