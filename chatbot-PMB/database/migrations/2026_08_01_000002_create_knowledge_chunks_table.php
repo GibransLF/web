@@ -27,7 +27,7 @@ return new class extends Migration
             DB::statement('CREATE EXTENSION IF NOT EXISTS vector');
             DB::statement('ALTER TABLE knowledge_chunks ALTER COLUMN embedding TYPE vector USING embedding::text::vector');
             DB::statement('CREATE INDEX IF NOT EXISTS knowledge_chunks_embedding_hnsw_idx ON knowledge_chunks USING hnsw (embedding vector_cosine_ops)');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Fallback gracefully if pgvector extension is not enabled in local Postgres instance yet
         }
     }

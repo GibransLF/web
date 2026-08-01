@@ -13,12 +13,12 @@
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('PMB Management')" class="grid">
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Analytics Dashboard') }}
+                        {{ __('Dashboard') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="book-open" :href="route('admin.knowledge-base')" :current="request()->routeIs('admin.knowledge-base')" wire:navigate>
                         {{ __('Knowledge Base') }}
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="cog" :href="route('admin.settings')" :current="request()->routeIs('admin.settings')" wire:navigate>
+                    <flux:sidebar.item icon="cog" :href="route('admin.chatbot-setting')" :current="request()->routeIs('admin.chatbot-setting')" wire:navigate>
                         {{ __('Chatbot Settings') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="chat-bubble-left-right" :href="route('admin.chat-history')" :current="request()->routeIs('admin.chat-history')" wire:navigate>
@@ -28,16 +28,6 @@
             </flux:sidebar.nav>
 
             <flux:spacer />
-
-            <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
-                </flux:sidebar.item>
-            </flux:sidebar.nav>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>

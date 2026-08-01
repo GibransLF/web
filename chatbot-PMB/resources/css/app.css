@@ -11,6 +11,10 @@
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
+    --color-primary: #000e65;
+    --color-secondary: #f9ce04;
+    --color-secondary-hover: #ecc300;
+
     --color-pmb-primary: #000e65;
     --color-pmb-deep: #1b287d;
     --color-pmb-yellow: #f9ce04;
@@ -32,6 +36,74 @@
     --color-accent: #1b287d;
     --color-accent-content: #1b287d;
     --color-accent-foreground: #ffffff;
+}
+
+/* Sidebar Light Mode Customization (Primary background & Secondary active menu) */
+html:not(.dark) ui-sidebar[data-flux-sidebar] {
+    background-color: var(--color-pmb-primary, #000e65) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-flux-brand],
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-flux-sidebar-brand] {
+    color: #ffffff !important;
+}
+
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-flux-sidebar-brand] .text-\[\#F9CE04\] {
+    color: #f9ce04 !important;
+}
+
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-flux-sidebar-item] {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-flux-sidebar-item]:hover {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-flux-sidebar-item][data-current] {
+    background-color: var(--color-pmb-yellow, #f9ce04) !important;
+    color: var(--color-pmb-primary, #000e65) !important;
+    font-weight: 600 !important;
+    border-color: transparent !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-flux-sidebar-item][data-current] svg {
+    color: var(--color-pmb-primary, #000e65) !important;
+}
+
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-flux-subheading] {
+    color: rgba(255, 255, 255, 0.65) !important;
+}
+
+html:not(.dark) ui-sidebar[data-flux-sidebar] button[data-flux-sidebar-profile],
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-test="sidebar-menu-button"] {
+    color: #ffffff !important;
+}
+
+html:not(.dark) ui-sidebar[data-flux-sidebar] button[data-flux-sidebar-profile] > span.truncate,
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-test="sidebar-menu-button"] > span.truncate {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html:not(.dark) ui-sidebar[data-flux-sidebar] button[data-flux-sidebar-profile] svg,
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-test="sidebar-menu-button"] svg {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+html:not(.dark) ui-sidebar[data-flux-sidebar] button[data-flux-sidebar-profile]:hover,
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-test="sidebar-menu-button"]:hover {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html:not(.dark) ui-sidebar[data-flux-sidebar] button[data-flux-sidebar-profile]:hover > span.truncate,
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-test="sidebar-menu-button"]:hover > span.truncate,
+html:not(.dark) ui-sidebar[data-flux-sidebar] button[data-flux-sidebar-profile]:hover svg,
+html:not(.dark) ui-sidebar[data-flux-sidebar] [data-test="sidebar-menu-button"]:hover svg {
+    color: #ffffff !important;
 }
 
 @layer theme {

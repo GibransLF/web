@@ -92,6 +92,7 @@ new #[Layout('components.layouts.landing')] class extends Component {
         // Save to PostgreSQL chat_histories table
         try {
             ChatHistory::create([
+                'user_id' => auth()->id(),
                 'guest_id' => $this->guestId,
                 'question' => $userQuestion,
                 'answer' => $aiAnswer['text'],
@@ -208,14 +209,14 @@ new #[Layout('components.layouts.landing')] class extends Component {
                 @foreach($messages as $msg)
                     @if($msg['role'] === 'ai')
                         <div class="flex flex-col items-start max-w-[85%] space-y-1">
-                            <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-[13px] border border-zinc-200 dark:border-zinc-700 shadow-sm leading-relaxed whitespace-pre-line">{{ trim($msg['content']) }}</div>
+                            <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-sm border border-zinc-200 dark:border-zinc-700 shadow-sm leading-relaxed whitespace-pre-line">{{ trim($msg['content']) }}</div>
                             <div class="px-1">
                                 <span class="text-[10px] text-zinc-400 font-medium">{{ $msg['time'] ?? now()->format('H:i') }}</span>
                             </div>
                         </div>
                     @else
                         <div class="flex flex-col items-end max-w-[85%] ml-auto space-y-1">
-                            <div class="bg-[#1B287D] text-white px-3.5 py-2.5 rounded-2xl rounded-tr-sm text-[13px] shadow-sm leading-relaxed whitespace-pre-line">{{ trim($msg['content']) }}</div>
+                            <div class="bg-[#1B287D] text-white px-3.5 py-2.5 rounded-2xl rounded-tr-sm text-sm shadow-sm leading-relaxed whitespace-pre-line">{{ trim($msg['content']) }}</div>
                             <div class="px-1 text-right">
                                 <span class="text-[10px] text-zinc-400 font-medium">{{ $msg['time'] ?? now()->format('H:i') }}</span>
                             </div>
@@ -225,7 +226,7 @@ new #[Layout('components.layouts.landing')] class extends Component {
 
                 <!-- Typing Indicator -->
                 <div x-show="loading" class="flex flex-col items-start max-w-[85%]">
-                    <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-[13px] border border-zinc-200 dark:border-zinc-700 shadow-sm flex items-center gap-1.5 min-h-[38px]">
+                    <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-sm border border-zinc-200 dark:border-zinc-700 shadow-sm flex items-center gap-1.5 min-h-[38px]">
                         <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce"></span>
                         <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce [animation-delay:0.2s]"></span>
                         <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce [animation-delay:0.4s]"></span>

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
-        \Carbon\Carbon::setLocale('id');
+        Carbon::setLocale('id');
         setlocale(LC_TIME, 'id_ID.utf8', 'id_ID', 'id');
 
         DB::prohibitDestructiveCommands(

@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('chat_histories', function (Blueprint $table) {
             $table->id();
-            $table->string('guest_id')->index();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('guest_id')->nullable()->index();
             $table->text('question');
             $table->text('answer');
             $table->json('source_documents')->nullable();

@@ -1,14 +1,15 @@
 <?php
 
 use Livewire\Component;
+use Livewire\Attributes\Title;
 use App\Models\ChatbotSetting;
 
-new class extends Component {
+new #[Title('Chatbot Settings')] class extends Component {
     public int $max_input_character = 500;
     public int $max_chat_memory = 1;
     public int $top_k = 5;
     public int $fetch_k = 15;
-    public float $temperature = 0.3;
+    public float $temperature = 0.2;
     public string $system_prompt = '';
 
     protected array $rules = [
@@ -20,6 +21,26 @@ new class extends Component {
         'system_prompt' => 'required|string|min:10',
     ];
 
+    protected array $messages = [
+        'max_input_character.required' => 'Batas karakter input wajib diisi.',
+        'max_input_character.min' => 'Batas karakter input minimal 50 karakter.',
+        'max_input_character.max' => 'Batas karakter input maksimal 2000 karakter.',
+        'max_chat_memory.required' => 'Memori percakapan wajib diisi.',
+        'max_chat_memory.min' => 'Memori percakapan minimal 1.',
+        'max_chat_memory.max' => 'Memori percakapan maksimal 10.',
+        'top_k.required' => 'Nilai Top-K wajib diisi.',
+        'top_k.min' => 'Nilai Top-K minimal 1.',
+        'top_k.max' => 'Nilai Top-K maksimal 20.',
+        'fetch_k.required' => 'Nilai Fetch-K wajib diisi.',
+        'fetch_k.min' => 'Nilai Fetch-K minimal 1.',
+        'fetch_k.max' => 'Nilai Fetch-K maksimal 50.',
+        'temperature.required' => 'Nilai temperature wajib diisi.',
+        'temperature.min' => 'Temperature minimal 0.0.',
+        'temperature.max' => 'Temperature maksimal 1.0.',
+        'system_prompt.required' => 'System Prompt AI wajib diisi.',
+        'system_prompt.min' => 'System Prompt minimal 10 karakter.',
+    ];
+
     public function mount(): void
     {
         $setting = ChatbotSetting::current();
@@ -27,13 +48,18 @@ new class extends Component {
         $this->max_chat_memory = $setting->max_chat_memory;
         $this->top_k = $setting->top_k;
         $this->fetch_k = $setting->fetch_k;
-        $this->temperature = $setting->temperature;
+        $this->temperature = (float) $setting->temperature;
         $this->system_prompt = $setting->system_prompt ?? '';
     }
 
     public function saveSettings(): void
     {
         $this->validate();
+
+        if ($this->fetch_k < $this->top_k) {
+            $this->addError('fetch_k', 'Nilai Fetch-K sebaiknya lebih besar atau sama dengan Nilai Top-K.');
+            return;
+        }
 
         $setting = ChatbotSetting::current();
         $setting->update([
@@ -45,85 +71,229 @@ new class extends Component {
             'system_prompt' => $this->system_prompt,
         ]);
 
-        session()->flash('success', 'Konfigurasi Chatbot AI berhasil diperbarui di database PostgreSQL!');
+        session()->flash('success', 'Konfigurasi Chatbot AI berhasil diperbarui!');
+    }
+
+    public function resetDefaults(): void
+    {
+        $defaults = ChatbotSetting::getDefaults();
+        $this->max_input_character = $defaults['max_input_character'];
+        $this->max_chat_memory = $defaults['max_chat_memory'];
+        $this->top_k = $defaults['top_k'];
+        $this->fetch_k = $defaults['fetch_k'];
+        $this->temperature = (float) $defaults['temperature'];
+        $this->system_prompt = $defaults['system_prompt'];
+
+        session()->flash('info', 'Form konfigurasi telah dikembalikan ke nilai default PMB. Klik "Simpan Konfigurasi" untuk menyimpan perubahan.');
+    }
+
+    public function loadDefaultPrompt(): void
+    {
+        $defaults = ChatbotSetting::getDefaults();
+        $this->system_prompt = $defaults['system_prompt'];
     }
 };
 ?>
 
-<x-layouts::app :title="__('Chatbot Settings')">
-    <div class="max-w-4xl space-y-6">
-        <!-- Flash Alert -->
-        @if (session()->has('success'))
-            <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm flex items-center justify-between">
-                <span>{{ session('success') }}</span>
-            </div>
-        @endif
-
+<div class="max-w-5xl space-y-4 sm:space-y-6 px-1 sm:px-0">
+    <!-- Page Header & Action Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-zinc-800 p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-xs">
         <div>
-            <h1 class="text-2xl font-bold text-zinc-900 dark:text-white">Chatbot Settings</h1>
-            <p class="text-sm text-zinc-500 dark:text-zinc-400">Atur parameter RAG, batas memori, dan instruksi System Prompt tanpa perlu mengubah kode program.</p>
+            <h1 class="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2.5">
+                <flux:icon icon="cog-6-tooth" class="w-6 h-6 sm:w-7 sm:h-7 text-[#1B287D] dark:text-blue-400 shrink-0" />
+                Chatbot Settings
+            </h1>
+            <p class="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                Atur parameter RAG, batas memori, dan instruksi System Prompt tanpa perlu mengubah kode program.
+            </p>
         </div>
-
-        <form wire:submit.prevent="saveSettings" class="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-xs p-6 space-y-6">
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Max Input Character -->
-                <flux:field>
-                    <flux:label>Maksimal Karakter Input Pengguna</flux:label>
-                    <flux:description>Batas panjang teks pertanyaan calon mahasiswa.</flux:description>
-                    <flux:input type="number" wire:model="max_input_character" />
-                    <flux:error name="max_input_character" />
-                </flux:field>
-
-                <!-- Max Chat Memory -->
-                <flux:field>
-                    <flux:label>Maksimal Memory Chat (Percakapan)</flux:label>
-                    <flux:description>Jumlah riwayat percakapan sebelumnya yang dikirim ke LLM.</flux:description>
-                    <flux:input type="number" wire:model="max_chat_memory" />
-                    <flux:error name="max_chat_memory" />
-                </flux:field>
-
-                <!-- Top-K -->
-                <flux:field>
-                    <flux:label>Nilai Top-K (Retrieval)</flux:label>
-                    <flux:description>Jumlah chunk dokumen paling relevan yang dijadikan konteks.</flux:description>
-                    <flux:input type="number" wire:model="top_k" />
-                    <flux:error name="top_k" />
-                </flux:field>
-
-                <!-- Fetch-K -->
-                <flux:field>
-                    <flux:label>Nilai Fetch-K (MMR Search)</flux:label>
-                    <flux:description>Jumlah kandidat chunk awal sebelum pengurutan keberagaman MMR.</flux:description>
-                    <flux:input type="number" wire:model="fetch_k" />
-                    <flux:error name="fetch_k" />
-                </flux:field>
-
-                <!-- Temperature -->
-                <flux:field class="md:col-span-2">
-                    <flux:label>Temperature LLM (0.0 - 1.0)</flux:label>
-                    <flux:description>Nilai lebih rendah (0.1 - 0.3) membuat jawaban lebih faktual dan konsisten.</flux:description>
-                    <div class="flex items-center gap-4">
-                        <input type="range" min="0" max="1" step="0.05" wire:model.live="temperature" class="w-full accent-[#1B287D]" />
-                        <span class="font-mono font-bold text-[#1B287D] bg-blue-50 px-3 py-1 rounded-md text-sm border border-blue-200">{{ number_format($temperature, 2) }}</span>
-                    </div>
-                    <flux:error name="temperature" />
-                </flux:field>
-
-                <!-- System Prompt -->
-                <flux:field class="md:col-span-2">
-                    <flux:label>System Prompt AI</flux:label>
-                    <flux:description>Instruksi kepribadian dan aturan dasar bagi LLM dalam menjawab pertanyaan PMB.</flux:description>
-                    <textarea wire:model="system_prompt" rows="5" class="w-full text-sm p-3 border border-zinc-300 rounded-lg bg-zinc-50 font-mono focus:ring-[#1B287D] focus:border-[#1B287D]"></textarea>
-                    <flux:error name="system_prompt" />
-                </flux:field>
-            </div>
-
-            <div class="flex justify-end border-t border-zinc-100 pt-4">
-                <flux:button variant="primary" type="submit">
-                    Simpan Konfigurasi Database
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
+            <flux:modal.trigger name="confirm-reset-settings">
+                <flux:button variant="ghost" icon="arrow-path" class="w-full sm:w-auto justify-center text-xs sm:text-sm">
+                    Reset Default
                 </flux:button>
-            </div>
-        </form>
+            </flux:modal.trigger>
+            <flux:modal.trigger name="confirm-save-settings">
+                <flux:button variant="primary" icon="check" class="w-full sm:w-auto justify-center text-xs sm:text-sm whitespace-nowrap">
+                    Simpan Konfigurasi
+                </flux:button>
+            </flux:modal.trigger>
+        </div>
     </div>
-</x-layouts::app>
+
+    <!-- Notification Alerts -->
+    @if (session()->has('success'))
+        <x-settings-alert-banner type="success" :message="session('success')" />
+    @endif
+
+    @if (session()->has('info'))
+        <x-settings-alert-banner type="info" :message="session('info')" />
+    @endif
+
+    <form wire:submit.prevent="saveSettings" class="space-y-4 sm:space-y-6">
+        <!-- Section 1: Batas Input & Memori -->
+        <x-settings-section-card
+            title="Batas Input & Memori Percakapan"
+            description="Pengaturan batas panjang karakter pertanyaan calon mahasiswa dan batas memori percakapan sebelumnya."
+            icon="chat-bubble-left-right"
+            badge="General Limits"
+        >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <x-settings-field
+                    name="max_input_character"
+                    label="Maksimal Karakter Input Pengguna"
+                    description="Batas maksimal panjang teks pertanyaan dari calon mahasiswa per pesan."
+                    badge="50 - 2000 Karakter"
+                >
+                    <flux:input type="number" min="50" max="2000" wire:model="max_input_character" icon="pencil-square" />
+                </x-settings-field>
+
+                <x-settings-field
+                    name="max_chat_memory"
+                    label="Maksimal Memory Chat (Percakapan)"
+                    description="Jumlah riwayat percakapan sebelumnya yang disertakan sebagai konteks memori LLM."
+                    badge="1 - 10 Turn"
+                >
+                    <flux:input type="number" min="1" max="10" wire:model="max_chat_memory" icon="clock" />
+                </x-settings-field>
+            </div>
+        </x-settings-section-card>
+
+        <!-- Section 2: Konfigurasi RAG & Vector Retrieval -->
+        <x-settings-section-card
+            title="Konfigurasi Retrieval Augmented Generation (RAG)"
+            description="Parameter pencarian pencocokan similarity vector (pgvector HNSW index)."
+            icon="cpu-chip"
+            badge="Vector Database"
+        >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <x-settings-field
+                    name="top_k"
+                    label="Nilai Top-K (Final Context Chunks)"
+                    description="Jumlah potongan dokumen paling relevan yang dimasukkan ke konteks prompt LLM."
+                    badge="Default: 5"
+                >
+                    <flux:input type="number" min="1" max="20" wire:model="top_k" icon="document-magnifying-glass" />
+                </x-settings-field>
+
+                <x-settings-field
+                    name="fetch_k"
+                    label="Nilai Fetch-K (MMR Candidate Search)"
+                    description="Jumlah kandidat chunk awal yang diambil sebelum penyaringan keberagaman (Maximal Marginal Relevance)."
+                    badge="Default: 15"
+                >
+                    <flux:input type="number" min="1" max="50" wire:model="fetch_k" icon="funnel" />
+                </x-settings-field>
+            </div>
+        </x-settings-section-card>
+
+        <!-- Section 3: Model LLM & System Prompt -->
+        <x-settings-section-card
+            title="Model LLM & System Prompt AI"
+            description="Instruksi perilaku AI Assistant PMB STMIK Bandung dan parameter kreativitas respons."
+            icon="sparkles"
+            badge="Qwen3 8B (OpenRouter)"
+        >
+            <div class="space-y-4 sm:space-y-6">
+                <!-- Temperature Range Slider with Alpine.js entangle for zero-lag drag -->
+                <x-settings-field
+                    name="temperature"
+                    label="Temperature LLM (Creativity / Factuality)"
+                    description="Nilai lebih rendah (0.1 - 0.3) membuat jawaban lebih faktual dan konsisten sesuai knowledge base."
+                >
+                    <div x-data="{ temp: @entangle('temperature') }" class="p-3.5 sm:p-4 bg-zinc-50 dark:bg-zinc-900/60 rounded-xl border border-zinc-200 dark:border-zinc-700/60 space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <span class="text-xs font-semibold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                                <flux:icon icon="adjustments-vertical" class="w-4 h-4 text-[#1B287D] shrink-0" />
+                                Level Temperature:
+                            </span>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-xs font-medium px-2 py-0.5 rounded-md"
+                                      :class="parseFloat(temp) <= 0.3 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300'"
+                                      x-text="parseFloat(temp) <= 0.3 ? 'Faktual & Konsisten (Rekomendasi)' : 'Lebih Bervariasi / Kreatif'">
+                                </span>
+                                <span class="font-mono font-bold text-[#1B287D] bg-blue-50 dark:bg-blue-950 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-md text-xs sm:text-sm border border-blue-200 dark:border-blue-800 shrink-0"
+                                      x-text="parseFloat(temp).toFixed(2)">
+                                </span>
+                            </div>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            x-model="temp"
+                            class="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-[#1B287D] my-1"
+                        />
+                        <div class="flex justify-between text-[10px] sm:text-[11px] text-zinc-400 font-mono">
+                            <span>0.0 (Presisi)</span>
+                            <span>0.2 (Standard)</span>
+                            <span>1.0 (Kreatif)</span>
+                        </div>
+                    </div>
+                </x-settings-field>
+
+                <!-- System Prompt Textarea with Alpine.js -->
+                <x-settings-field
+                    name="system_prompt"
+                    label="System Prompt AI Assistant"
+                    description="Aturan dasar kepribadian, gaya bahasa, dan instruksi pembatasan jawaban chatbot."
+                >
+                    <div x-data="{ prompt: @entangle('system_prompt') }" class="space-y-2">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <span class="text-xs text-zinc-500 font-mono">
+                                Jumlah Karakter: <strong class="text-zinc-900 dark:text-white" x-text="prompt ? prompt.length : 0"></strong>
+                            </span>
+                            <flux:button variant="ghost" size="sm" icon="document-duplicate" class="self-start sm:self-auto" wire:click="loadDefaultPrompt">
+                                Muat Template Standard PMB
+                            </flux:button>
+                        </div>
+                        <textarea
+                            x-model="prompt"
+                            rows="6"
+                            placeholder="Masukkan instruksi System Prompt AI..."
+                            class="w-full text-xs sm:text-sm p-3 sm:p-3.5 border border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 font-mono focus:ring-2 focus:ring-[#1B287D] focus:border-transparent transition-all"
+                        ></textarea>
+                    </div>
+                </x-settings-field>
+            </div>
+        </x-settings-section-card>
+
+        <!-- Bottom Action Footer -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-t border-zinc-200 dark:border-zinc-700 pt-5 sm:pt-6 gap-4">
+            <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                * Perubahan konfigurasi akan langsung berlaku untuk semua percakapan chatbot baru.
+            </p>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
+                <flux:modal.trigger name="confirm-reset-settings">
+                    <flux:button variant="ghost" class="w-full sm:w-auto justify-center">
+                        Batal / Reset
+                    </flux:button>
+                </flux:modal.trigger>
+                <flux:modal.trigger name="confirm-save-settings">
+                    <flux:button variant="primary" icon="check" class="w-full sm:w-auto justify-center">
+                        Simpan Konfigurasi
+                    </flux:button>
+                </flux:modal.trigger>
+            </div>
+        </div>
+    </form>
+
+    <!-- Flux UI Danger Confirmation Modal for Reset -->
+    <x-modal-danger
+        name="confirm-reset-settings"
+        title="Reset Konfigurasi Chatbot AI?"
+        description="Tindakan ini akan mengembalikan seluruh parameter RAG, batas memori, dan System Prompt ke nilai default PMB STMIK Bandung. Apakah Anda yakin ingin melanjutkan?"
+        confirmText="Ya, Reset Default"
+        confirmAction="resetDefaults"
+    />
+
+    <!-- Flux UI Danger Confirmation Modal for Save -->
+    <x-modal-danger
+        name="confirm-save-settings"
+        title="Simpan Konfigurasi Chatbot AI?"
+        description="Apakah Anda yakin ingin menyimpan seluruh perubahan parameter RAG, batas memori, dan System Prompt ini?"
+        confirmText="Ya, Simpan Perubahan"
+        confirmAction="saveSettings"
+    />
+</div>

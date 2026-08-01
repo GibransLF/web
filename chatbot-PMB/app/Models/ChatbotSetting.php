@@ -18,15 +18,20 @@ class ChatbotSetting extends Model
         'system_prompt',
     ];
 
-    public static function current(): self
+    public static function getDefaults(): array
     {
-        return static::firstOrCreate([], [
+        return [
             'max_input_character' => 500,
             'max_chat_memory' => 1,
             'top_k' => 5,
             'fetch_k' => 15,
-            'temperature' => 0.3,
-            'system_prompt' => "Anda adalah AI Assistant PMB STMIK Bandung yang ramah, sopan, dan profesional. Tugas Anda adalah memberikan informasi terkini dan akurat mengenai Penerimaan Mahasiswa Baru (PMB) STMIK Bandung berdasarkan knowledge base resmi. Jawablah secara singkat, padat, dan jelas.",
-        ]);
+            'temperature' => 0.2,
+            'system_prompt' => 'Anda adalah AI Assistant PMB STMIK Bandung yang ramah, sopan, dan profesional. Tugas Anda adalah memberikan informasi terkini dan akurat mengenai Penerimaan Mahasiswa Baru (PMB) STMIK Bandung berdasarkan knowledge base resmi. Jawablah secara singkat, padat, dan jelas.',
+        ];
+    }
+
+    public static function current(): self
+    {
+        return static::firstOrCreate([], static::getDefaults());
     }
 }

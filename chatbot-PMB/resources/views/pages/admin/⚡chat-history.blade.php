@@ -2,9 +2,10 @@
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Title;
 use App\Models\ChatHistory;
 
-new class extends Component {
+new #[Title('Chat History')] class extends Component {
     use WithPagination;
 
     public string $search = '';
@@ -19,97 +20,118 @@ new class extends Component {
         ChatHistory::truncate();
         session()->flash('success', 'Seluruh riwayat chat percakapan berhasil dibersihkan.');
     }
+
+    public function with(): array
+    {
+        $query = ChatHistory::with('user');
+
+        if (! empty($this->search)) {
+            $query->where(function ($q) {
+                $q->where('guest_id', 'like', '%'.$this->search.'%')
+                    ->orWhere('question', 'like', '%'.$this->search.'%')
+                    ->orWhere('answer', 'like', '%'.$this->search.'%')
+                    ->orWhereHas('user', function ($uq) {
+                        $uq->where('name', 'like', '%'.$this->search.'%');
+                    });
+            });
+        }
+
+        return [
+            'chatMessages' => $query->latest()->paginate(10),
+        ];
+    }
 };
 ?>
 
-<x-layouts::app :title="__('Chat History')">
-    <div class="space-y-6">
-        <!-- Flash Alert -->
-        @if (session()->has('success'))
-            <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm flex items-center justify-between">
-                <span>{{ session('success') }}</span>
-            </div>
+<div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl space-y-6">
+    <!-- Flash Alert -->
+    @if (session()->has('success'))
+        <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm flex items-center justify-between">
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+
+    <!-- Header & Action -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <flux:heading size="xl">{{ __('History Chatbot') }}</flux:heading>
+            <flux:subheading>{{ __('Daftar riwayat chat asisten AI.') }}</flux:subheading>
+        </div>
+        @if(ChatHistory::exists())
+            <flux:button variant="ghost" icon="trash" class="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30" wire:click="clearAllHistory" wire:confirm="Apakah Anda yakin ingin mengosongkan seluruh riwayat percakapan?">
+                Bersihkan Riwayat
+            </flux:button>
         @endif
+    </div>
 
-        <!-- Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-zinc-900 dark:text-white">Riwayat Percakapan Chatbot</h1>
-                <p class="text-sm text-zinc-500 dark:text-zinc-400">Log pertanyaan calon mahasiswa beserta jawaban AI dan rujukan dokumen sumber.</p>
-            </div>
-            @if(ChatHistory::exists())
-                <flux:button variant="ghost" icon="trash" class="text-red-600 hover:bg-red-50" wire:click="clearAllHistory" wire:confirm="Apakah Anda yakin ingin mengosongkan seluruh riwayat percakapan?">
-                    Bersihkan Riwayat
-                </flux:button>
-            @endif
+    <!-- Search Filter & Counter Bar -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-xs">
+        <div class="relative w-full max-w-md">
+            <flux:input icon="magnifying-glass" wire:model.live="search" placeholder="Cari ID Guest, Nama User, atau kata kunci..." />
         </div>
-
-        <!-- Search Filter -->
-        <div class="flex items-center justify-between gap-4 bg-white dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-xs">
-            <div class="relative w-full max-w-md">
-                <flux:input icon="magnifying-glass" wire:model.live="search" placeholder="Cari Guest ID atau kata kunci pertanyaan..." />
-            </div>
-            <div class="text-xs text-zinc-500">
-                Total Percakapan: <span class="font-bold text-zinc-900 dark:text-white">{{ ChatHistory::count() }}</span>
-            </div>
-        </div>
-
-        <!-- Chat History Table -->
-        <div class="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-xs overflow-hidden">
-            <flux:table>
-                <flux:columns>
-                    <flux:column>Guest ID</flux:column>
-                    <flux:column>Pertanyaan Pengguna</flux:column>
-                    <flux:column>Jawaban AI</flux:column>
-                    <flux:column>Dokumen Sumber</flux:column>
-                    <flux:column>Waktu</flux:column>
-                </flux:columns>
-
-                <flux:rows>
-                    @forelse(ChatHistory::where('guest_id', 'like', '%'.$search.'%')->orWhere('question', 'like', '%'.$search.'%')->orWhere('answer', 'like', '%'.$search.'%')->latest()->paginate(10) as $history)
-                        <flux:row>
-                            <flux:cell>
-                                <span class="font-mono text-xs font-semibold px-2 py-1 bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-md">
-                                    {{ $history->guest_id }}
-                                </span>
-                            </flux:cell>
-                            <flux:cell class="max-w-xs">
-                                <p class="text-xs font-medium text-zinc-900 dark:text-white leading-relaxed line-clamp-2">
-                                    {{ $history->question }}
-                                </p>
-                            </flux:cell>
-                            <flux:cell class="max-w-md">
-                                <p class="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed line-clamp-3">
-                                    {{ $history->answer }}
-                                </p>
-                            </flux:cell>
-                            <flux:cell>
-                                @if(!empty($history->source_documents))
-                                    <div class="flex flex-wrap gap-1">
-                                        @foreach($history->source_documents as $doc)
-                                            <span class="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-[#1B287D] px-2 py-0.5 rounded-md font-medium border border-blue-200">
-                                                <flux:icon icon="document-text" class="w-3 h-3" />
-                                                {{ $doc }}
-                                            </span>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <span class="text-xs text-zinc-400">-</span>
-                                @endif
-                            </flux:cell>
-                            <flux:cell class="text-xs text-zinc-500 whitespace-nowrap">
-                                {{ $history->created_at->format('d M Y, H:i') }}
-                            </flux:cell>
-                        </flux:row>
-                    @empty
-                        <flux:row>
-                            <flux:cell colspan="5" class="text-center py-10 text-zinc-400">
-                                Belum ada riwayat percakapan ditemukan.
-                            </flux:cell>
-                        </flux:row>
-                    @endforelse
-                </flux:rows>
-            </flux:table>
+        <div class="text-xs text-zinc-500">
+            Total Percakapan: <span class="font-bold text-zinc-900 dark:text-white">{{ ChatHistory::count() }}</span>
         </div>
     </div>
-</x-layouts::app>
+
+    <!-- Chat History List in the style of chat-history.blade.php -->
+    <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-8">
+        @forelse($chatMessages as $msg)
+            <div class="border-b border-zinc-200 dark:border-zinc-800 pb-6 last:border-b-0 last:pb-0">
+                <!-- Metadata: User Name or guest and created_at -->
+                <div class="flex items-center justify-between mb-4 text-xs text-zinc-500 dark:text-zinc-400">
+                    <span class="inline-flex items-center gap-1.5 font-semibold text-zinc-700 dark:text-zinc-300">
+                        <flux:icon name="user" class="w-3.5 h-3.5" />
+                        @if($msg->user_id && $msg->user)
+                            {{ $msg->user->name }}
+                        @else
+                            guest ({{ $msg->guest_id ?? 'unknown' }})
+                        @endif
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <flux:icon name="clock" class="w-3.5 h-3.5" />
+                        {{ $msg->created_at ? $msg->created_at->format('d M Y H:i:s') : '-' }}
+                    </span>
+                </div>
+
+                <!-- Chat bubbles in the style of ai-chat.blade.php / chat-history.blade.php -->
+                <div class="space-y-3">
+                    <!-- User Message -->
+                    <div class="flex flex-col items-end max-w-[85%] ml-auto">
+                        <div class="bg-[#1B287D] text-white px-4 py-3 rounded-2xl rounded-tr-sm text-sm shadow-sm leading-relaxed">
+                            {{ $msg->question }}
+                        </div>
+                    </div>
+
+                    <!-- AI Answer -->
+                    <div class="flex flex-col items-start max-w-[85%]">
+                        <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-4 py-3 rounded-2xl rounded-tl-sm text-sm border border-zinc-200 dark:border-zinc-700 shadow-sm leading-relaxed">
+                            {{ $msg->answer }}
+                        </div>
+                        @if(!empty($msg->source_documents))
+                            <div class="flex flex-wrap gap-1.5 mt-2 ml-1">
+                                @foreach($msg->source_documents as $doc)
+                                    <span class="inline-flex items-center gap-1 text-[10px] bg-blue-50 dark:bg-blue-950/50 text-[#1B287D] dark:text-blue-300 px-2 py-0.5 rounded-md font-medium border border-blue-200 dark:border-blue-800">
+                                        <flux:icon icon="document-text" class="w-3 h-3" />
+                                        {{ $doc }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @empty
+            <div class="text-center text-zinc-500 py-8">
+                {{ __('Belum ada riwayat chat.') }}
+            </div>
+        @endforelse
+
+        <!-- Pagination Links -->
+        @if($chatMessages->hasPages())
+            <div class="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                {{ $chatMessages->links() }}
+            </div>
+        @endif
+    </div>
+</div>
