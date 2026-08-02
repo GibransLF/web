@@ -40,4 +40,6 @@ return [
         'timeout' => (int) env('AI_SERVICE_TIMEOUT', 180),
     ],
 
+    'whatsapp_admin' => env('WHATSAPP_ADMIN_URL', 'https://wa.me/628112342113'),
+
 ];

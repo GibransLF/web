@@ -4,7 +4,8 @@ from config import settings
 from models import ChatRequest, ChatResponse
 # Import fungsi logika dari services/
 from services.createBaseKnowledge import create_base_knowledge
-from services.chat import chat_rag
+# from services.chat import chat_rag
+from services.chatOpenrouter import chat_rag
 
 app = FastAPI(
     title="PMB RAG Service",

@@ -14,6 +14,7 @@ new class extends Component {
     public int $maxCharacter = 500;
     public int $guestMessageCount = 0;
     public int $guestMaxLimit = 4;
+    public string $adminWhatsappUrl = '';
 
     public function mount(): void
     {
@@ -25,6 +26,8 @@ new class extends Component {
         $setting = ChatbotSetting::current();
         $this->maxCharacter = $setting->max_input_character;
         $this->guestMaxLimit = $setting->max_guest_chat;
+        $this->adminWhatsappUrl = config('services.whatsapp_admin', 'https://wa.me/628112342113');
+
 
         // Count messages sent by this guest session
         if (!auth()->check()) {
@@ -234,7 +237,7 @@ new class extends Component {
             <div class="relative flex-1">
                 <flux:input wire:model="message" maxlength="{{ $maxCharacter }}" wire:keydown.enter.prevent="sendMessage" wire:loading.attr="disabled" wire:target="sendMessage, fetchAiResponse" :disabled="$this->isGuestLimitReached()" placeholder="{{ $this->isGuestLimitReached() ? 'Batas pesan tamu tercapai. Silakan tunggu beberapa saat.' : 'Tulis pesan Anda di sini (maks ' . $maxCharacter . ' karakter)...' }}"
                     class="pr-10 bg-[#F5F5F5] border-zinc-200 focus:border-[#1B287D] dark:bg-zinc-800 dark:border-zinc-700 w-full rounded-lg disabled:opacity-60 disabled:cursor-not-allowed text-sm" />
-                <button type="submit" wire:loading.attr="disabled" wire:target="sendMessage, fetchAiResponse" :disabled="$this->isGuestLimitReached()"
+                <button type="submit" wire:loading.attr="disabled" wire:target="sendMessage, fetchAiResponse" @disabled($this->isGuestLimitReached())
                     class="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#1B287D] dark:hover:text-[#F9CE04] transition-colors p-1 disabled:opacity-40 disabled:cursor-not-allowed"
                     aria-label="Kirim pesan">
                     <flux:icon name="paper-airplane" class="w-5 h-5" />
@@ -247,7 +250,7 @@ new class extends Component {
         </div>
 
         <div class="mt-3">
-            <flux:button href="https://wa.me/6281222242026" target="_blank" variant="primary"
+            <flux:button href="{{ $adminWhatsappUrl }}" target="_blank" variant="primary"
                 class="w-full !bg-[#25D366] !text-white hover:!bg-[#1EBE5A] !border-[#25D366] font-bold"
                 icon="chat-bubble-left-right">
                 WhatsApp Admin

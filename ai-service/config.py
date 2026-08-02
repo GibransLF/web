@@ -7,10 +7,11 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_EMBEDDING_MODEL: str = "qwen3-embedding:0.6b"
     OLLAMA_LLM_MODEL: str = "qwen2.5:3b-instruct"
-    
-    CHROMA_PERSIST_DIR: str = "./chroma_db"
-    CHROMA_COLLECTION_NAME: str = "pmb_knowledge_base"
 
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_MODEL: str = ""
+    
     POSTGRES_HOST: str = "127.0.0.1"
     POSTGRES_PORT: int = 5432
     POSTGRES_DB: str = "pmb-rag"

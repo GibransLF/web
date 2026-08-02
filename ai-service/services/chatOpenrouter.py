@@ -1,7 +1,8 @@
 import time
 import numpy as np
 from typing import List, Optional
-from langchain_ollama import OllamaEmbeddings, ChatOllama
+from langchain_ollama import OllamaEmbeddings
+from langchain_openrouter import ChatOpenRouter
 from langchain_core.prompts import ChatPromptTemplate
 from config import settings
 from models import ChatHistoryItem
@@ -29,7 +30,7 @@ Aturan:
     ("human", "Riwayat:\n{history}\n\nPertanyaan:\n{newMessage}")
 ])
 
-def condense_pmb_question(newMessage: str, history: List[ChatHistoryItem], llm: ChatOllama) -> str:
+def condense_pmb_question(newMessage: str, history: List[ChatHistoryItem], llm: ChatOpenRouter) -> str:
     history_str = ""
     for item in history:
         history_str += f"Calon Mahasiswa: {item.question}\nAsisten PMB: {item.answer}\n"
@@ -88,7 +89,7 @@ def chat_rag(newMessage: str, history: List[ChatHistoryItem] = None, k: Optional
         history = []
         
     start_time = time.time()
-    print("\n--- [START] PMB RAG Chat (PostgreSQL pgvector Adapter + HNSW Search) ---")
+    print("\n--- [START] PMB RAG Chat (OpenRouter API + PostgreSQL pgvector Adapter) ---")
     try:
         # 0. Load chatbot settings dari PostgreSQL
         bot_settings = get_chatbot_settings()
@@ -108,21 +109,24 @@ def chat_rag(newMessage: str, history: List[ChatHistoryItem] = None, k: Optional
 Pertanyaan Calon Mahasiswa: {search_query}""")
         ])
 
-        # 1. Inisialisasi Model LLM & Embeddings PMB
+        # 1. Inisialisasi Model LLM (OpenRouter) & Embeddings PMB (Ollama)
         t0 = time.time()
-        print("[Step 1] Inisialisasi Model LLM & Embeddings...")
+        print("[Step 1] Inisialisasi OpenRouter LLM & Embeddings...")
         embeddings = OllamaEmbeddings(
             base_url=settings.OLLAMA_BASE_URL,
             model=settings.OLLAMA_EMBEDDING_MODEL
         )
-        llm = ChatOllama(
-            base_url=settings.OLLAMA_BASE_URL,
-            model=settings.OLLAMA_LLM_MODEL,
-            temperature=temperature,
-            timeout=getattr(settings, "OLLAMA_TIMEOUT", 180)
+        
+        if not settings.OPENROUTER_API_KEY:
+            print(" -> WARNING: OPENROUTER_API_KEY belum diisi di .env!")
+
+        llm = ChatOpenRouter(
+            api_key=settings.OPENROUTER_API_KEY,
+            model=settings.OPENROUTER_MODEL,
+            temperature=temperature
         )
         t1 = time.time()
-        print(f" -> Selesai dalam: {t1 - t0:.4f} detik")
+        print(f" -> Selesai dalam: {t1 - t0:.4f} detik (Model OpenRouter: {settings.OPENROUTER_MODEL})")
         
         # 2. Kondensasi pertanyaan jika ada history percakapan
         if history:

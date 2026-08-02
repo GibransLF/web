@@ -33,7 +33,7 @@
                 </li>
                 <li class="flex items-center gap-2 group">
                     <span class="w-1.5 h-1.5 rounded-full bg-[#1B287D] group-hover:bg-[#F9CE04] transition-colors"></span>
-                    <a href="https://pmb.stmikbandung.ac.id" target="_blank" class="hover:text-[#F9CE04] transition-colors">Pendaftaran PMB STMIK Bandung</a>
+                    <a href="https://pmb.stmik-bandung.ac.id/" target="_blank" class="hover:text-[#F9CE04] transition-colors">Pendaftaran PMB STMIK Bandung</a>
                 </li>
                 <li class="flex items-center gap-2 group">
                     <span class="w-1.5 h-1.5 rounded-full bg-[#1B287D] group-hover:bg-[#F9CE04] transition-colors"></span>
@@ -65,7 +65,7 @@
         <div>
             <h3 class="font-semibold text-sm text-[#1B287D] dark:text-[#F9CE04] mb-4 uppercase tracking-wider">Sosial Media</h3>
             <div class="flex space-x-3 items-center">
-                <a href="https://youtube.com" target="_blank"
+                <a href="https://www.youtube.com/@stmikbandung113" target="_blank"
                     class="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1B287D] text-white hover:bg-[#F9CE04] hover:text-[#1B287D] hover:-translate-y-1 transition-all duration-300 shadow-sm">
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -74,7 +74,7 @@
                         <path d="m10 15 5-3-5-3z"></path>
                     </svg>
                 </a>
-                <a href="https://facebook.com" target="_blank"
+                <a href="https://www.facebook.com/share/NGs46FRHeTMeBZbX/?mibextid=qi2Omg" target="_blank"
                     class="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1B287D] text-white hover:bg-[#F9CE04] hover:text-[#1B287D] hover:-translate-y-1 transition-all duration-300 shadow-sm">
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -82,7 +82,7 @@
                         <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
                     </svg>
                 </a>
-                <a href="https://instagram.com" target="_blank"
+                <a href="https://www.instagram.com/stmikbandung/" target="_blank"
                     class="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1B287D] text-white hover:bg-[#F9CE04] hover:text-[#1B287D] hover:-translate-y-1 transition-all duration-300 shadow-sm">
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -92,7 +92,7 @@
                         <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
                     </svg>
                 </a>
-                <a href="https://wa.me/6281222242026" target="_blank"
+                <a href="{{ config('services.whatsapp_admin', 'https://wa.me/628112342113') }}" target="_blank"
                     class="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1B287D] text-white hover:bg-[#F9CE04] hover:text-[#1B287D] hover:-translate-y-1 transition-all duration-300 shadow-sm">
                     <flux:icon name="phone" class="w-5 h-5" />
                 </a>

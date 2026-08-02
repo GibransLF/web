@@ -58,9 +58,11 @@ new #[Title('Chat History')] class extends Component {
             <flux:subheading>{{ __('Daftar riwayat chat asisten AI.') }}</flux:subheading>
         </div>
         @if(ChatHistory::exists())
-            <flux:button variant="ghost" icon="trash" class="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30" wire:click="clearAllHistory" wire:confirm="Apakah Anda yakin ingin mengosongkan seluruh riwayat percakapan?">
-                Bersihkan Riwayat
-            </flux:button>
+            <flux:modal.trigger name="confirm-clear-history">
+                <flux:button variant="ghost" icon="trash" class="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
+                    Bersihkan Riwayat
+                </flux:button>
+            </flux:modal.trigger>
         @endif
     </div>
 
@@ -130,11 +132,19 @@ new #[Title('Chat History')] class extends Component {
             </div>
         @endforelse
 
-        <!-- Pagination Links -->
         @if($chatMessages->hasPages())
             <div class="pt-4 border-t border-zinc-200 dark:border-zinc-800">
                 {{ $chatMessages->links() }}
             </div>
         @endif
     </div>
+
+    <!-- Danger Confirmation Modal for Clear History -->
+    <x-modal-danger
+        name="confirm-clear-history"
+        title="Kosongkan Riwayat Percakapan?"
+        description="Tindakan ini akan menghapus seluruh data riwayat percakapan chatbot secara permanen. Apakah Anda yakin ingin melanjutkan?"
+        confirmText="Ya, Hapus Semua"
+        confirmAction="clearAllHistory"
+    />
 </div>
