@@ -77,9 +77,9 @@ new #[Title('Chat History')] class extends Component {
     <!-- Chat History List in the style of chat-history.blade.php -->
     <div class="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-8">
         @forelse($chatMessages as $msg)
-            <div class="border-b border-zinc-200 dark:border-zinc-800 pb-6 last:border-b-0 last:pb-0">
+            <div class="border-b border-zinc-200 dark:border-zinc-800 py-6 first:pt-0 last:border-b-0 last:pb-0">
                 <!-- Metadata: User Name or guest and created_at -->
-                <div class="flex items-center justify-between mb-4 text-xs text-zinc-500 dark:text-zinc-400">
+                <div class="flex items-center justify-between mb-3 text-xs text-zinc-500 dark:text-zinc-400">
                     <span class="inline-flex items-center gap-1.5 font-semibold text-zinc-700 dark:text-zinc-300">
                         <flux:icon name="user" class="w-3.5 h-3.5" />
                         @if($msg->user_id && $msg->user)
@@ -95,7 +95,7 @@ new #[Title('Chat History')] class extends Component {
                 </div>
 
                 <!-- Chat bubbles in the style of ai-chat.blade.php / chat-history.blade.php -->
-                <div class="space-y-3">
+                <div class="space-y-4">
                     <!-- User Message -->
                     <div class="flex flex-col items-end max-w-[85%] ml-auto">
                         <div class="bg-[#1B287D] text-white px-4 py-3 rounded-2xl rounded-tr-sm text-sm shadow-sm leading-relaxed">
@@ -108,9 +108,12 @@ new #[Title('Chat History')] class extends Component {
                         <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-4 py-3 rounded-2xl rounded-tl-sm text-sm border border-zinc-200 dark:border-zinc-700 shadow-sm leading-relaxed">
                             {{ $msg->answer }}
                         </div>
-                        @if(!empty($msg->source_documents))
+                        @php
+                            $filteredDocs = array_filter($msg->source_documents ?? [], fn($doc) => !str_contains($doc, 'Informasi_Umum_PMB'));
+                        @endphp
+                        @if(!empty($filteredDocs))
                             <div class="flex flex-wrap gap-1.5 mt-2 ml-1">
-                                @foreach($msg->source_documents as $doc)
+                                @foreach($filteredDocs as $doc)
                                     <span class="inline-flex items-center gap-1 text-[10px] bg-blue-50 dark:bg-blue-950/50 text-[#1B287D] dark:text-blue-300 px-2 py-0.5 rounded-md font-medium border border-blue-200 dark:border-blue-800">
                                         <flux:icon icon="document-text" class="w-3 h-3" />
                                         {{ $doc }}

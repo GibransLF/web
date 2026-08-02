@@ -18,8 +18,8 @@ app = FastAPI(
 async def root():
     return {"status": "running", "service": "PMB RAG Service"}
 
-# 2. Endpoint Knowledge Base - POST (Upload & Ingest PDF)
-@app.post("/api/knowledge-base")
+# 2. Endpoint Knowledge Base - POST (Upload & Ingest DOCX)
+@app.post("/service/createnewknowledge")
 async def add_knowledge(
     file: UploadFile = File(...),
     filename: str = Form(...)

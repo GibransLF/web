@@ -1,33 +1,41 @@
-from langchain_ollama import OllamaEmbeddings
-from langchain_chroma import Chroma
+import psycopg2
 from config import settings
 
 def delete_base_knowledge(filename: str) -> int:
     """
-    Logika penghapusan dokumen dari ChromaDB berdasarkan metadata source.
+    Logika penghapusan dokumen dari PostgreSQL berdasarkan metadata filename.
     """
     try:
-        # 1. Inisialisasi Ollama Embeddings & ChromaDB
-        embeddings = OllamaEmbeddings(
-            base_url=settings.OLLAMA_BASE_URL,
-            model=settings.OLLAMA_EMBEDDING_MODEL
+        conn = psycopg2.connect(
+            host=settings.POSTGRES_HOST,
+            port=settings.POSTGRES_PORT,
+            dbname=settings.POSTGRES_DB,
+            user=settings.POSTGRES_USER,
+            password=settings.POSTGRES_PASSWORD
         )
-        vectorstore = Chroma(
-            persist_directory=settings.CHROMA_PERSIST_DIR,
-            embedding_function=embeddings,
-            collection_name=settings.CHROMA_COLLECTION_NAME
+        cur = conn.cursor()
+
+        # 1. Cari ID knowledge_bases berdasarkan filename / metadata_name
+        cur.execute(
+            "SELECT id FROM knowledge_bases WHERE metadata_name = %s OR filename = %s",
+            (filename, filename)
         )
-        
-        # 2. Akses low-level collection ChromaDB untuk mencari & menghapus by metadata 'source'
-        collection = vectorstore._collection
-        results = collection.get(where={"source": filename})
-        ids = results.get("ids", [])
-        
-        # 3. Hapus data jika ditemukan
-        if ids:
-            collection.delete(ids=ids)
-            return len(ids)
-        return 0
-        
+        row = cur.fetchone()
+        if not row:
+            cur.close()
+            conn.close()
+            return 0
+
+        kb_id = row[0]
+
+        # 2. Hapus chunk terkait di knowledge_chunks
+        cur.execute("DELETE FROM knowledge_chunks WHERE knowledge_base_id = %s", (kb_id,))
+        chunks_deleted = cur.rowcount
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return chunks_deleted
     except Exception as e:
         raise Exception(f"Gagal menghapus data: {str(e)}")

@@ -13,11 +13,12 @@ return new class extends Migration
     {
         Schema::create('knowledge_bases', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->string('filename');
-            $table->string('original_name');
-            $table->string('kategori');
+            $table->string('metadata_name');
+            $table->string('status')->default('success');
             $table->text('deskripsi')->nullable();
-            $table->timestamps();
+            $table->timestamp('created_at')->useCurrent();
         });
     }
 

@@ -2,6 +2,7 @@ import time
 from typing import List
 from langchain_ollama import OllamaEmbeddings, ChatOllama
 from langchain_chroma import Chroma
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from config import settings
 from models import ChatHistoryItem
@@ -9,8 +10,8 @@ from models import ChatHistoryItem
 # 1. Definisikan ChatPromptTemplate untuk Kondensasi Pertanyaan
 condense_prompt_template = ChatPromptTemplate.from_messages([
     (
-        "system",
-        """
+"system",
+"""
 Tugasmu HANYA menulis ulang pertanyaan menjadi pertanyaan mandiri.
 
 Aturan:
@@ -20,8 +21,9 @@ Aturan:
 - Output HARUS berupa 1 kalimat pertanyaan.
 - Jika pertanyaan sudah mandiri, kembalikan persis apa adanya.
 """
-    ),
-    ("human", "Riwayat:\n{history}\n\nPertanyaan:\n{newMessage}")
+),
+("human",
+"Riwayat:\n{history}\n\nPertanyaan:\n{newMessage}")
 ])
 
 # 2. Definisikan ChatPromptTemplate untuk Chat RAG Utama (Tanpa History Placeholder)
@@ -52,12 +54,12 @@ def condense_pmb_question(newMessage: str, history: List[ChatHistoryItem], llm: 
     response = llm.invoke(formatted_messages)
     return response.content.strip()
 
-def chat_rag_mmr(newMessage: str, history: List[ChatHistoryItem] = None, k: int = 5, fetch_k: int = 20) -> tuple[str, str]:
+def chat_rag(newMessage: str, history: List[ChatHistoryItem] = None) -> tuple[str, str]:
     if history is None:
         history = []
         
     start_time = time.time()
-    print("\n--- [START] PMB RAG Chat (MMR Search) ---")
+    print("\n--- [START] PMB RAG Chat ---")
     try:
         # 1. Inisialisasi Model LLM & Embeddings PMB
         t0 = time.time()
@@ -85,36 +87,29 @@ def chat_rag_mmr(newMessage: str, history: List[ChatHistoryItem] = None, k: int 
         else:
             search_query = newMessage
             
-        # 3. Ambil Dokumen PMB dari ChromaDB menggunakan pencarian MMR
+        # 3. Ambil Dokumen PMB dari ChromaDB berdasarkan search_query
         t2 = time.time()
-        actual_fetch_k = max(fetch_k, k)  # Memastikan fetch_k minimal sama dengan k
-        print(f"[Step 2] Mencari dokumen relevan di ChromaDB menggunakan MMR (k={k}, fetch_k={actual_fetch_k}) untuk: '{search_query}'...")
+        print(f"[Step 2] Mencari dokumen relevan di ChromaDB untuk: '{search_query}'...")
         vectorstore = Chroma(
             persist_directory=settings.CHROMA_PERSIST_DIR,
             embedding_function=embeddings,
             collection_name=settings.CHROMA_COLLECTION_NAME
         )
-        
-        docs = vectorstore.max_marginal_relevance_search(
-            search_query,
-            k=k,
-            fetch_k=actual_fetch_k,
-            lambda_mult=0.5
-        )
-        
-        print(f"\n=================== [HASIL RETRIEVAL CHROMADB MMR (k={k}, fetch_k={actual_fetch_k})] ===================")
-        for i, doc in enumerate(docs, 1):
+        docs_with_scores = vectorstore.similarity_search_with_score(search_query, k=settings.RETRIEVAL_K)
+        docs = []
+        print(f"\n=================== [HASIL RETRIEVAL CHROMADB (K={settings.RETRIEVAL_K})] ===================")
+        for i, (doc, score) in enumerate(docs_with_scores, 1):
+            docs.append(doc)
             source_info = doc.metadata.get("source", "N/A")
-            print(f"Doc #{i} | Source: {source_info}")
+            print(f"Doc #{i} | Score (Distance): {score:.4f} | Source: {source_info}")
             print(f"Teks Content:\n{doc.page_content}")
             print("-" * 70)
         print("=========================================================================\n")
-        
         context = "\n\n".join([doc.page_content for doc in docs])
         t3 = time.time()
         print(f" -> Selesai dalam: {t3 - t2:.4f} detik (Dokumen ditemukan: {len(docs)})")
         
-        # 4. Format prompt RAG Utama menggunakan ChatPromptTemplate
+        # 4. Format prompt RAG Utama menggunakan ChatPromptTemplate (Tanpa riwayat pesan)
         t4 = time.time()
         print("[Step 3] Memformat prompt utama...")
         formatted_messages = chat_prompt_template.format_messages(
@@ -132,8 +127,8 @@ def chat_rag_mmr(newMessage: str, history: List[ChatHistoryItem] = None, k: int 
         print(f" -> Selesai dalam: {t7 - t6:.4f} detik")
         
         total_time = t7 - start_time
-        print(f"--- [END] Total Waktu Proses RAG MMR: {total_time:.4f} detik ---\n")
+        print(f"--- [END] Total Waktu Proses RAG: {total_time:.4f} detik ---\n")
         return response.content, search_query
     except Exception as e:
-        print(f" -> ERROR: Terjadi kesalahan pada RAG MMR: {str(e)}")
-        raise Exception(f"Terjadi kesalahan pada RAG MMR: {str(e)}")
+        print(f" -> ERROR: Terjadi kesalahan pada RAG: {str(e)}")
+        raise Exception(f"Terjadi kesalahan pada RAG dengan Memory: {str(e)}")

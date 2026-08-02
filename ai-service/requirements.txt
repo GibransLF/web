@@ -10,4 +10,4 @@ langchain-chroma>=0.1.0
 langchain-ollama>=0.1.0
 markitdown[pdf]>=0.0.1A3
 python-dotenv>=1.0.0
-chromadb
+psycopg2-binary>=2.9.0

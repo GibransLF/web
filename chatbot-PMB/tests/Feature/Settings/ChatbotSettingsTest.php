@@ -22,9 +22,10 @@ test('chatbot settings can be updated successfully', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::admin.⚡chatbot-settings')
+    Livewire::test('pages::admin.chatbot-settings')
         ->set('max_input_character', 800)
         ->set('max_chat_memory', 3)
+        ->set('max_guest_chat', 5)
         ->set('top_k', 6)
         ->set('fetch_k', 20)
         ->set('temperature', 0.2)
@@ -37,6 +38,7 @@ test('chatbot settings can be updated successfully', function () {
 
     expect($setting->max_input_character)->toBe(800);
     expect($setting->max_chat_memory)->toBe(3);
+    expect($setting->max_guest_chat)->toBe(5);
     expect($setting->top_k)->toBe(6);
     expect($setting->fetch_k)->toBe(20);
     expect((float) $setting->temperature)->toBe(0.2);
@@ -48,7 +50,7 @@ test('fetch_k must be greater than or equal to top_k', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::admin.⚡chatbot-settings')
+    Livewire::test('pages::admin.chatbot-settings')
         ->set('top_k', 10)
         ->set('fetch_k', 5)
         ->call('saveSettings')
@@ -60,11 +62,13 @@ test('reset defaults restores initial chatbot configuration', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::admin.⚡chatbot-settings')
+    Livewire::test('pages::admin.chatbot-settings')
         ->set('max_input_character', 1500)
+        ->set('max_guest_chat', 10)
         ->set('temperature', 0.8)
         ->call('resetDefaults')
         ->assertSet('max_input_character', 500)
+        ->assertSet('max_guest_chat', 4)
         ->assertSet('temperature', 0.2)
         ->assertSee('Form konfigurasi telah dikembalikan ke nilai default PMB');
 });

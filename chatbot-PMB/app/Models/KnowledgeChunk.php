@@ -2,18 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class KnowledgeChunk extends Model
 {
-    use HasFactory;
+    const UPDATED_AT = null;
 
     protected $fillable = [
         'knowledge_base_id',
         'chunk_text',
-        'kategori',
-        'chunk_order',
         'embedding',
     ];
 

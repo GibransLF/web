@@ -5,7 +5,7 @@
     'badge' => null,
 ])
 
-<flux:field {{ $attributes }}>
+<flux:field {{ $attributes->merge(['class' => 'flex flex-col h-full']) }}>
     <div class="flex flex-wrap items-center justify-between gap-1.5 mb-1">
         <flux:label class="font-medium text-zinc-900 dark:text-white text-sm sm:text-base">{{ $label }}</flux:label>
         @if ($badge)
@@ -19,7 +19,9 @@
         <flux:description class="text-xs text-zinc-500 dark:text-zinc-400 mb-2 leading-relaxed">{{ $description }}</flux:description>
     @endif
 
-    {{ $slot }}
+    <div class="mt-auto">
+        {{ $slot }}
+    </div>
 
     <flux:error :name="$name" />
 </flux:field>

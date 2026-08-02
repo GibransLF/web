@@ -23,6 +23,7 @@ new class extends Component {
 
         $setting = ChatbotSetting::current();
         $this->maxCharacter = $setting->max_input_character;
+        $this->guestMaxLimit = $setting->max_guest_chat;
 
         // Count messages sent by this guest session
         if (!auth()->check()) {
@@ -139,7 +140,7 @@ new class extends Component {
 
         return [
             'text' => "Terima kasih atas pertanyaan Anda mengenai \"" . e($question) . "\". Informasi lebih lanjut dapat Anda dapatkan langsung melalui Sekretariat PMB STMIK Bandung di Jl. Cikutra No. 113 Bandung.",
-            'sources' => ['Informasi_Umum_PMB.docx']
+            'sources' => []
         ];
     }
 };
@@ -239,7 +240,7 @@ new class extends Component {
                 </button>
             </div>
         </form>
-        <div class="flex justify-between items-center text-[10px] text-zinc-400 mt-2 px-1">
+        <div class="flex justify-between text-center text-[10px] text-zinc-400 mt-2 px-1">
             <span>Maksimal {{ $maxCharacter }} karakter per pesan</span>
             <span>AI dapat membuat kekeliruan</span>
         </div>

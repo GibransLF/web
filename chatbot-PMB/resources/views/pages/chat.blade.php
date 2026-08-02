@@ -24,6 +24,7 @@ new #[Layout('components.layouts.landing')] class extends Component {
 
         $setting = ChatbotSetting::current();
         $this->maxCharacter = $setting->max_input_character;
+        $this->guestMaxLimit = $setting->max_guest_chat;
 
         // Count messages sent by this guest session
         if (!auth()->check()) {
@@ -142,7 +143,7 @@ new #[Layout('components.layouts.landing')] class extends Component {
 
         return [
             'text' => "Terima kasih atas pertanyaan Anda mengenai \"" . e($question) . "\". Informasi lebih lanjut dapat Anda dapatkan langsung melalui Sekretariat PMB STMIK Bandung di Jl. Cikutra No. 113 Bandung.",
-            'sources' => ['Informasi_Umum_PMB.docx']
+            'sources' => []
         ];
     }
 

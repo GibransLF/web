@@ -21,7 +21,7 @@ test('chatbot saves user_id when authenticated user sends message', function () 
     $user = User::factory()->create(['name' => 'Admin PMB']);
     $this->actingAs($user);
 
-    Livewire::test('pages::⚡chat')
+    Livewire::test('pages::chat')
         ->set('message', 'Berapa biaya pendaftaran PMB?')
         ->call('sendMessage');
 
@@ -32,7 +32,7 @@ test('chatbot saves user_id when authenticated user sends message', function () 
 });
 
 test('chatbot saves user_id as null when unauthenticated guest sends message', function () {
-    Livewire::test('pages::⚡chat')
+    Livewire::test('pages::chat')
         ->set('message', 'Persyaratan pendaftaran?')
         ->call('sendMessage');
 
@@ -62,7 +62,7 @@ test('chat history displays user name for user_id and guest for guest_id', funct
 
     $this->actingAs($user);
 
-    Livewire::test('pages::admin.⚡chat-history')
+    Livewire::test('pages::admin.chat-history')
         ->assertSee('Dr. Admin')
         ->assertSee('guest (guest_222)');
 });
@@ -80,7 +80,7 @@ test('chat history can be cleared', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::admin.⚡chat-history')
+    Livewire::test('pages::admin.chat-history')
         ->call('clearAllHistory');
 
     expect(ChatHistory::count())->toBe(0);

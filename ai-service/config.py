@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    PORT: int = 8000
+    PORT: int = 8080
     HOST: str = "127.0.0.1"
     
     OLLAMA_BASE_URL: str = "http://localhost:11434"
@@ -10,6 +10,12 @@ class Settings(BaseSettings):
     
     CHROMA_PERSIST_DIR: str = "./chroma_db"
     CHROMA_COLLECTION_NAME: str = "pmb_knowledge_base"
+
+    POSTGRES_HOST: str = "127.0.0.1"
+    POSTGRES_PORT: int = 5432
+    POSTGRES_DB: str = "pmb-rag"
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "plokijuh"
     
     CHUNK_SIZE: int = 600
     CHUNK_OVERLAP: int = 100

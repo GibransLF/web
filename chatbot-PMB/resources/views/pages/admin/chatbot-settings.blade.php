@@ -7,6 +7,7 @@ use App\Models\ChatbotSetting;
 new #[Title('Chatbot Settings')] class extends Component {
     public int $max_input_character = 500;
     public int $max_chat_memory = 1;
+    public int $max_guest_chat = 4;
     public int $top_k = 5;
     public int $fetch_k = 15;
     public float $temperature = 0.2;
@@ -15,6 +16,7 @@ new #[Title('Chatbot Settings')] class extends Component {
     protected array $rules = [
         'max_input_character' => 'required|integer|min:50|max:2000',
         'max_chat_memory' => 'required|integer|min:1|max:10',
+        'max_guest_chat' => 'required|integer|min:1|max:50',
         'top_k' => 'required|integer|min:1|max:20',
         'fetch_k' => 'required|integer|min:1|max:50',
         'temperature' => 'required|numeric|min:0|max:1',
@@ -28,6 +30,9 @@ new #[Title('Chatbot Settings')] class extends Component {
         'max_chat_memory.required' => 'Memori percakapan wajib diisi.',
         'max_chat_memory.min' => 'Memori percakapan minimal 1.',
         'max_chat_memory.max' => 'Memori percakapan maksimal 10.',
+        'max_guest_chat.required' => 'Maksimal chat guest wajib diisi.',
+        'max_guest_chat.min' => 'Maksimal chat guest minimal 1.',
+        'max_guest_chat.max' => 'Maksimal chat guest maksimal 50.',
         'top_k.required' => 'Nilai Top-K wajib diisi.',
         'top_k.min' => 'Nilai Top-K minimal 1.',
         'top_k.max' => 'Nilai Top-K maksimal 20.',
@@ -46,6 +51,7 @@ new #[Title('Chatbot Settings')] class extends Component {
         $setting = ChatbotSetting::current();
         $this->max_input_character = $setting->max_input_character;
         $this->max_chat_memory = $setting->max_chat_memory;
+        $this->max_guest_chat = $setting->max_guest_chat ?? 4;
         $this->top_k = $setting->top_k;
         $this->fetch_k = $setting->fetch_k;
         $this->temperature = (float) $setting->temperature;
@@ -65,6 +71,7 @@ new #[Title('Chatbot Settings')] class extends Component {
         $setting->update([
             'max_input_character' => $this->max_input_character,
             'max_chat_memory' => $this->max_chat_memory,
+            'max_guest_chat' => $this->max_guest_chat,
             'top_k' => $this->top_k,
             'fetch_k' => $this->fetch_k,
             'temperature' => $this->temperature,
@@ -79,6 +86,7 @@ new #[Title('Chatbot Settings')] class extends Component {
         $defaults = ChatbotSetting::getDefaults();
         $this->max_input_character = $defaults['max_input_character'];
         $this->max_chat_memory = $defaults['max_chat_memory'];
+        $this->max_guest_chat = $defaults['max_guest_chat'];
         $this->top_k = $defaults['top_k'];
         $this->fetch_k = $defaults['fetch_k'];
         $this->temperature = (float) $defaults['temperature'];
@@ -95,17 +103,12 @@ new #[Title('Chatbot Settings')] class extends Component {
 };
 ?>
 
-<div class="max-w-5xl space-y-4 sm:space-y-6 px-1 sm:px-0">
-    <!-- Page Header & Action Toolbar -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-zinc-800 p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-xs">
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2.5">
-                <flux:icon icon="cog-6-tooth" class="w-6 h-6 sm:w-7 sm:h-7 text-[#1B287D] dark:text-blue-400 shrink-0" />
-                Chatbot Settings
-            </h1>
-            <p class="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                Atur parameter RAG, batas memori, dan instruksi System Prompt tanpa perlu mengubah kode program.
-            </p>
+            <flux:heading size="xl">{{ __('Chatbot Settings') }}</flux:heading>
+            <flux:subheading>{{ __('Atur parameter RAG, batas memori, dan instruksi System Prompt tanpa perlu mengubah kode program.') }}</flux:subheading>
         </div>
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
             <flux:modal.trigger name="confirm-reset-settings">
@@ -134,15 +137,15 @@ new #[Title('Chatbot Settings')] class extends Component {
         <!-- Section 1: Batas Input & Memori -->
         <x-settings-section-card
             title="Batas Input & Memori Percakapan"
-            description="Pengaturan batas panjang karakter pertanyaan calon mahasiswa dan batas memori percakapan sebelumnya."
+            description="Pengaturan batas panjang karakter pertanyaan calon mahasiswa, batas memori percakapan, dan kuota chat tamu."
             icon="chat-bubble-left-right"
             badge="General Limits"
         >
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 items-stretch">
                 <x-settings-field
                     name="max_input_character"
                     label="Maksimal Karakter Input Pengguna"
-                    description="Batas maksimal panjang teks pertanyaan dari calon mahasiswa per pesan."
+                    description="Batas maksimal panjang teks pertanyaan per pesan."
                     badge="50 - 2000 Karakter"
                 >
                     <flux:input type="number" min="50" max="2000" wire:model="max_input_character" icon="pencil-square" />
@@ -150,11 +153,20 @@ new #[Title('Chatbot Settings')] class extends Component {
 
                 <x-settings-field
                     name="max_chat_memory"
-                    label="Maksimal Memory Chat (Percakapan)"
-                    description="Jumlah riwayat percakapan sebelumnya yang disertakan sebagai konteks memori LLM."
+                    label="Maksimal Memory Chat"
+                    description="Jumlah riwayat percakapan sebelumnya sebagai konteks LLM."
                     badge="1 - 10 Turn"
                 >
                     <flux:input type="number" min="1" max="10" wire:model="max_chat_memory" icon="clock" />
+                </x-settings-field>
+
+                <x-settings-field
+                    name="max_guest_chat"
+                    label="Maksimal Chat Tamu (Guest)"
+                    description="Batas kuota pesan gratis untuk pengunjung tanpa login."
+                    badge="1 - 50 Pesan"
+                >
+                    <flux:input type="number" min="1" max="50" wire:model="max_guest_chat" icon="user" />
                 </x-settings-field>
             </div>
         </x-settings-section-card>
@@ -166,7 +178,7 @@ new #[Title('Chatbot Settings')] class extends Component {
             icon="cpu-chip"
             badge="Vector Database"
         >
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-stretch">
                 <x-settings-field
                     name="top_k"
                     label="Nilai Top-K (Final Context Chunks)"
@@ -265,11 +277,6 @@ new #[Title('Chatbot Settings')] class extends Component {
                 * Perubahan konfigurasi akan langsung berlaku untuk semua percakapan chatbot baru.
             </p>
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
-                <flux:modal.trigger name="confirm-reset-settings">
-                    <flux:button variant="ghost" class="w-full sm:w-auto justify-center">
-                        Batal / Reset
-                    </flux:button>
-                </flux:modal.trigger>
                 <flux:modal.trigger name="confirm-save-settings">
                     <flux:button variant="primary" icon="check" class="w-full sm:w-auto justify-center">
                         Simpan Konfigurasi

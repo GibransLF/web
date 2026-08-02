@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    public $withinTransaction = false;
+
     /**
      * Run the migrations.
      */
@@ -16,10 +18,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('knowledge_base_id')->constrained('knowledge_bases')->onDelete('cascade');
             $table->text('chunk_text');
-            $table->string('kategori');
-            $table->integer('chunk_order')->default(0);
             $table->json('embedding')->nullable();
-            $table->timestamps();
+            $table->timestamp('created_at')->useCurrent();
         });
 
         // Try creating vector column if pgvector extension is available in Postgres

@@ -12,6 +12,7 @@ class ChatbotSetting extends Model
     protected $fillable = [
         'max_input_character',
         'max_chat_memory',
+        'max_guest_chat',
         'top_k',
         'fetch_k',
         'temperature',
@@ -23,6 +24,7 @@ class ChatbotSetting extends Model
         return [
             'max_input_character' => 500,
             'max_chat_memory' => 1,
+            'max_guest_chat' => 4,
             'top_k' => 5,
             'fetch_k' => 15,
             'temperature' => 0.2,
