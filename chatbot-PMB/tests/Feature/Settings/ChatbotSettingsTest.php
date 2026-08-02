@@ -45,6 +45,21 @@ test('chatbot settings can be updated successfully', function () {
     expect($setting->system_prompt)->toBe('System prompt tes PMB STMIK Bandung.');
 });
 
+test('max_chat_memory can be set to zero for no conversation memory', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::admin.chatbot-settings')
+        ->set('max_chat_memory', 0)
+        ->call('saveSettings')
+        ->assertHasNoErrors()
+        ->assertSee('Konfigurasi Chatbot AI berhasil diperbarui');
+
+    $setting = ChatbotSetting::current()->fresh();
+    expect($setting->max_chat_memory)->toBe(0);
+});
+
 test('fetch_k must be greater than or equal to top_k', function () {
     $user = User::factory()->create();
 

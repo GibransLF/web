@@ -15,7 +15,7 @@ new #[Title('Chatbot Settings')] class extends Component {
 
     protected array $rules = [
         'max_input_character' => 'required|integer|min:50|max:2000',
-        'max_chat_memory' => 'required|integer|min:1|max:10',
+        'max_chat_memory' => 'required|integer|min:0|max:10',
         'max_guest_chat' => 'required|integer|min:1|max:50',
         'top_k' => 'required|integer|min:1|max:20',
         'fetch_k' => 'required|integer|min:1|max:50',
@@ -28,7 +28,7 @@ new #[Title('Chatbot Settings')] class extends Component {
         'max_input_character.min' => 'Batas karakter input minimal 50 karakter.',
         'max_input_character.max' => 'Batas karakter input maksimal 2000 karakter.',
         'max_chat_memory.required' => 'Memori percakapan wajib diisi.',
-        'max_chat_memory.min' => 'Memori percakapan minimal 1.',
+        'max_chat_memory.min' => 'Memori percakapan minimal 0.',
         'max_chat_memory.max' => 'Memori percakapan maksimal 10.',
         'max_guest_chat.required' => 'Maksimal chat guest wajib diisi.',
         'max_guest_chat.min' => 'Maksimal chat guest minimal 1.',
@@ -154,10 +154,10 @@ new #[Title('Chatbot Settings')] class extends Component {
                 <x-settings-field
                     name="max_chat_memory"
                     label="Maksimal Memory Chat"
-                    description="Jumlah riwayat percakapan sebelumnya sebagai konteks LLM."
-                    badge="1 - 10 Turn"
+                    description="Jumlah riwayat percakapan sebelumnya sebagai konteks LLM (0 = Tanpa Memori)."
+                    badge="0 - 10 Turn"
                 >
-                    <flux:input type="number" min="1" max="10" wire:model="max_chat_memory" icon="clock" />
+                    <flux:input type="number" min="0" max="10" wire:model="max_chat_memory" icon="clock" />
                 </x-settings-field>
 
                 <x-settings-field

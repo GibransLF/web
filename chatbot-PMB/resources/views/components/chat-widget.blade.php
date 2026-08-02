@@ -4,6 +4,7 @@ use Livewire\Component;
 use App\Models\ChatbotSetting;
 use App\Models\ChatHistory;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 new class extends Component {
     public string $guestId = '';
@@ -34,7 +35,7 @@ new class extends Component {
         $this->messages = [
             [
                 'role' => 'ai',
-                'content' => "Halo! 👋 Selamat datang di PMB STMIK Bandung.\nSaya AI Asisten Akademik PMB yang siap membantu Anda menjawab pertanyaan seputar pendaftaran, biaya kuliah, program studi, dan fasilitas kampus.\n\nAda yang bisa saya bantu?",
+                'content' => "Halo! 👋 Selamat datang di PMB STMIK Bandung.\nSaya AI Asisten Akademik PMB yang siap membantu Anda menjawab pertanyaan seputar PMB. \n\nAda yang bisa saya bantu?",
                 'sources' => [],
                 'time' => now()->format('H:i'),
             ]
@@ -61,7 +62,7 @@ new class extends Component {
 
         $currentTime = now()->format('H:i');
 
-        // Add User Message
+        // Step 1: Add User Message immediately to $this->messages so DOM renders it instantly
         $this->messages[] = [
             'role' => 'user',
             'content' => $cleanInput,
@@ -69,21 +70,72 @@ new class extends Component {
             'time' => $currentTime,
         ];
 
-        $userQuestion = $cleanInput;
         $this->message = '';
-        $this->loading = true;
 
         if (!auth()->check()) {
             $this->guestMessageCount++;
         }
 
-        // Simulated AI Response for UI demonstration
-        $aiAnswer = $this->generateMockResponse($userQuestion);
+        $this->dispatch('scroll-bottom');
+
+        // Step 2: Trigger async AI response fetch on client
+        $this->js('$wire.fetchAiResponse()');
+    }
+
+    public function fetchAiResponse(): void
+    {
+        if (empty($this->messages)) {
+            return;
+        }
+
+        $lastIndex = count($this->messages) - 1;
+        if ($this->messages[$lastIndex]['role'] !== 'user') {
+            return;
+        }
+        $userQuestion = $this->messages[$lastIndex]['content'];
+
+        // Susun history percakapan dari $this->messages (sebelum pertanyaan terakhir)
+        $historyPayload = [];
+        $tempQuestion = null;
+        for ($i = 0; $i < $lastIndex; $i++) {
+            $msg = $this->messages[$i];
+            if ($msg['role'] === 'user') {
+                $tempQuestion = $msg['content'];
+            } elseif ($msg['role'] === 'ai' && $tempQuestion !== null) {
+                $historyPayload[] = [
+                    'question' => $tempQuestion,
+                    'answer' => $msg['content'],
+                ];
+                $tempQuestion = null;
+            }
+        }
+
+        // Kirim HTTP request ke FastAPI AI Service (/service/chat)
+        $aiServiceUrl = config('services.ai_service.url', 'http://127.0.0.1:8080');
+        $timeout = config('services.ai_service.timeout', 180);
+        $aiAnswerText = '';
+        $sources = [];
+
+        try {
+            $response = Http::timeout($timeout)->post("{$aiServiceUrl}/service/chat", [
+                'newMessage' => $userQuestion,
+                'history' => $historyPayload,
+            ]);
+
+            if ($response->successful() && $response->json('success')) {
+                $aiAnswerText = $response->json('response');
+            } else {
+                $errorDetail = $response->json('detail') ?? $response->json('message') ?? 'Terjadi kesalahan pada layanan AI.';
+                $aiAnswerText = "Maaf, sistem AI sedang mengalami kendala ({$errorDetail}). Silakan coba beberapa saat lagi atau hubungi panitia PMB melalui tombol WhatsApp di bawah.";
+            }
+        } catch (\Throwable $e) {
+            $aiAnswerText = "Maaf, server AI saat ini sedang tidak dapat dijangkau. Silakan pastikan layanan AI aktif atau hubungi panitia PMB melalui tombol WhatsApp di bawah.";
+        }
 
         $this->messages[] = [
             'role' => 'ai',
-            'content' => $aiAnswer['text'],
-            'sources' => $aiAnswer['sources'],
+            'content' => $aiAnswerText,
+            'sources' => $sources,
             'time' => now()->format('H:i'),
         ];
 
@@ -93,62 +145,20 @@ new class extends Component {
                 'user_id' => auth()->id(),
                 'guest_id' => $this->guestId,
                 'question' => $userQuestion,
-                'answer' => $aiAnswer['text'],
-                'source_documents' => $aiAnswer['sources'],
+                'answer' => $aiAnswerText,
+                'source_documents' => $sources,
             ]);
         } catch (\Throwable $e) {
             // Ignore DB log error if unreachable
         }
 
-        $this->loading = false;
         $this->dispatch('scroll-bottom');
-    }
-
-    private function generateMockResponse(string $question): array
-    {
-        $q = mb_strtolower($question);
-
-        if (Str::contains($q, ['biaya', 'harga', 'spp', 'bayar', 'cicil'])) {
-            return [
-                'text' => "Biaya pendidikan di STMIK Bandung bervariasi sesuai dengan Program Studi:\n\n"
-                    . "• Teknik Informatika (S1): SPP terjangkau dengan skema pembayaran dicicil per bulan.\n"
-                    . "• Sistem Informasi (S1): Biaya kuliah fleksibel + beasiswa prestasi.\n\n"
-                    . "Tersedia juga potongan biaya hingga 50% untuk pendaftar Gelombang 1.",
-                'sources' => ['Panduan_Biaya_PMB_2026.docx']
-            ];
-        }
-
-        if (Str::contains($q, ['syarat', 'persyaratan', 'berkas', 'dokumen'])) {
-            return [
-                'text' => "Persyaratan umum pendaftaran calon mahasiswa baru STMIK Bandung:\n\n"
-                    . "1. Pasfoto terbaru ukuran 3x4 (Background Merah/Biru).\n"
-                    . "2. Fotokopi Ijazah / SKL SMA/SMK/MA sederajat.\n"
-                    . "3. Fotokopi Kartu Keluarga (KK) & KTP.\n"
-                    . "4. Mengisi formulir pendaftaran online.",
-                'sources' => ['Persyaratan_Umum_PMB.docx']
-            ];
-        }
-
-        if (Str::contains($q, ['prodi', 'jurusan', 'program studi'])) {
-            return [
-                'text' => "STMIK Bandung menyelenggarakan program studi unggulan:\n\n"
-                    . "• S1 Teknik Informatika: Mempelajari AI, Software Engineering, & Cybersecurity.\n"
-                    . "• S1 Sistem Informasi: Mempelajari Business Intelligence, UI/UX Design, & IT Governance.",
-                'sources' => ['Brosur_Prodi_STMIK_Bandung.docx']
-            ];
-        }
-
-        return [
-            'text' => "Terima kasih atas pertanyaan Anda mengenai \"" . e($question) . "\". Informasi lebih lanjut dapat Anda dapatkan langsung melalui Sekretariat PMB STMIK Bandung di Jl. Cikutra No. 113 Bandung.",
-            'sources' => []
-        ];
     }
 };
 ?>
 
 <div class="flex flex-col h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 w-full border-l border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden"
     x-data="{ 
-        loading: false, 
         scrollToBottom() { 
             const container = this.$refs.chatContainer;
             if (container) {
@@ -157,23 +167,14 @@ new class extends Component {
         } 
     }"
     x-init="
-        $watch('$wire.messages', () => { 
-            $nextTick(() => {
-                scrollToBottom();
+        const container = $refs.chatContainer;
+        if (container) {
+            const observer = new MutationObserver(() => {
+                $nextTick(() => scrollToBottom());
             });
-        });
+            observer.observe(container, { childList: true, subtree: true, attributes: true });
+        }
         $nextTick(() => scrollToBottom());
-        Livewire.hook('request', ({ respond, fail }) => {
-            respond(() => {
-                $nextTick(() => {
-                    loading = false;
-                    scrollToBottom();
-                });
-            });
-            fail(() => {
-                loading = false;
-            });
-        });
     "
     @scroll-bottom.window="scrollToBottom()">
     
@@ -210,8 +211,8 @@ new class extends Component {
             @endif
         @endforeach
 
-        <!-- Typing Indicator -->
-        <div x-show="loading" class="flex flex-col items-start max-w-[85%]">
+        <!-- Typing Indicator (Native Livewire Loading) -->
+        <div wire:loading wire:target="fetchAiResponse" class="flex flex-col items-start max-w-[85%]">
             <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-sm border border-zinc-200 dark:border-zinc-700 shadow-sm flex items-center gap-1.5 min-h-[38px]">
                 <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce"></span>
                 <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce [animation-delay:0.2s]"></span>
@@ -229,11 +230,11 @@ new class extends Component {
             </div>
         @endif
 
-        <form wire:submit.prevent="sendMessage" @submit="loading = true; $nextTick(() => scrollToBottom())" class="flex items-center gap-2">
+        <form wire:submit.prevent="sendMessage" @submit="$nextTick(() => scrollToBottom())" class="flex items-center gap-2">
             <div class="relative flex-1">
-                <flux:input wire:model="message" maxlength="{{ $maxCharacter }}" wire:keydown.enter.prevent="sendMessage" wire:loading.attr="disabled" :disabled="$this->isGuestLimitReached()" placeholder="{{ $this->isGuestLimitReached() ? 'Batas pesan tamu tercapai. Silakan tunggu beberapa saat.' : 'Tulis pesan Anda di sini (maks ' . $maxCharacter . ' karakter)...' }}"
+                <flux:input wire:model="message" maxlength="{{ $maxCharacter }}" wire:keydown.enter.prevent="sendMessage" wire:loading.attr="disabled" wire:target="sendMessage, fetchAiResponse" :disabled="$this->isGuestLimitReached()" placeholder="{{ $this->isGuestLimitReached() ? 'Batas pesan tamu tercapai. Silakan tunggu beberapa saat.' : 'Tulis pesan Anda di sini (maks ' . $maxCharacter . ' karakter)...' }}"
                     class="pr-10 bg-[#F5F5F5] border-zinc-200 focus:border-[#1B287D] dark:bg-zinc-800 dark:border-zinc-700 w-full rounded-lg disabled:opacity-60 disabled:cursor-not-allowed text-sm" />
-                <button type="submit" wire:loading.attr="disabled" :disabled="$this->isGuestLimitReached()"
+                <button type="submit" wire:loading.attr="disabled" wire:target="sendMessage, fetchAiResponse" :disabled="$this->isGuestLimitReached()"
                     class="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#1B287D] dark:hover:text-[#F9CE04] transition-colors p-1 disabled:opacity-40 disabled:cursor-not-allowed"
                     aria-label="Kirim pesan">
                     <flux:icon name="paper-airplane" class="w-5 h-5" />

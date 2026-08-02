@@ -13,6 +13,3 @@ class ChatResponse(BaseModel):
     success: bool
     response: str
     question: str
-
-class DeleteKnowledgeRequest(BaseModel):
-    filename: str

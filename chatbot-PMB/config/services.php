@@ -37,6 +37,7 @@ return [
 
     'ai_service' => [
         'url' => env('AI_SERVICE_URL', 'http://127.0.0.1:8080'),
+        'timeout' => (int) env('AI_SERVICE_TIMEOUT', 180),
     ],
 
 ];

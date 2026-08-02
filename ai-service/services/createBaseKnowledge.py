@@ -1,6 +1,7 @@
 import os
 import tempfile
 import json
+import re
 import psycopg2
 from datetime import datetime
 from fastapi import UploadFile
@@ -8,6 +9,7 @@ from markitdown import MarkItDown
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 from config import settings
+from services.db import get_db_connection
 
 def create_base_knowledge(file: UploadFile, filename: str) -> int:
     """
@@ -29,12 +31,33 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
         markitdown = MarkItDown()
         result = markitdown.convert(temp_path)
         markdown_content = result.text_content
+        
+        # 2.5 Perbaiki header tabel hasil MarkItDown
+        pattern = re.compile(
+            r'^\|(?:\s*\|\s*)+\s*$\r?\n'            # |  |  |
+            r'^\|(?:\s*:?-+:?\s*\|)+\s*$\r?\n'      # | --- | --- |
+            r'(?P<header>^\|.*\|)$',                 # | **Pertanyaan** | **Jawaban** |
+            flags=re.MULTILINE
+        )
+
+        def replace(match):
+            header = match.group("header")
+
+            # Hitung jumlah kolom
+            column_count = header.count("|") - 1
+
+            # Buat separator baru sesuai jumlah kolom
+            separator = "|" + "|".join([" --- "] * column_count) + "|"
+
+            return f"{header}\n{separator}"
+
+        markdown_content = pattern.sub(replace, markdown_content)
 
         # 3. Potong teks markdown menjadi chunks menggunakan RecursiveCharacterTextSplitter
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.CHUNK_SIZE,
             chunk_overlap=settings.CHUNK_OVERLAP,
-            separators=["\n\n", "\n", " ", ""]
+            separators=["\n\n", "\n", "\n#", ""]
         )
         raw_docs = splitter.create_documents(
             texts=[markdown_content],
@@ -45,7 +68,7 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
         docs = []
         for doc in raw_docs:
             clean_text = doc.page_content.strip()
-            if len(clean_text) >= 30 and not (clean_text.startswith("#") and "\n" not in clean_text):
+            if len(clean_text) >= 100 and not (clean_text.startswith("#") and "\n" not in clean_text):
                 docs.append(doc)
 
         if not docs:
@@ -57,14 +80,8 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
             model=settings.OLLAMA_EMBEDDING_MODEL
         )
 
-        # 6. Koneksi ke PostgreSQL database pmb-rag
-        conn = psycopg2.connect(
-            host=settings.POSTGRES_HOST,
-            port=settings.POSTGRES_PORT,
-            dbname=settings.POSTGRES_DB,
-            user=settings.POSTGRES_USER,
-            password=settings.POSTGRES_PASSWORD
-        )
+        # 6. Koneksi ke PostgreSQL database pmb-rag via helper terpusat
+        conn = get_db_connection(register_pgvector=True)
         cur = conn.cursor()
 
         # Cari ID knowledge_bases berdasarkan metadata_name

@@ -16,7 +16,7 @@
                     <div class="flex flex-col sm:flex-row gap-4 pt-2">
                         <flux:button variant="primary"
                             class="!bg-[#F9CE04] !text-[#1B287D] !border-[#F9CE04] hover:!bg-[#e0ba03] hover:!text-[#1B287D] px-8 py-3.5 h-auto text-base rounded-xl shadow-md font-bold w-full sm:w-auto"
-                            href="https://pmb.stmikbandung.ac.id" target="_blank">
+                            href="https://pmb.stmik-bandung.ac.id" target="_blank">
                             Daftar PMB Sekarang
                             <flux:icon name="arrow-right" class="w-5 h-5 ml-2" />
                         </flux:button>

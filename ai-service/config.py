@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 100
     RETRIEVAL_K: int = 3
     LLM_TEMPERATURE: float = 0.2
+    OLLAMA_TIMEOUT: int = 180
 
     class Config:
         env_file = ".env"

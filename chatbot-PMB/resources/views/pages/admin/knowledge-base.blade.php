@@ -6,6 +6,7 @@ use Livewire\Attributes\Title;
 use App\Models\KnowledgeBase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Flux\Flux;
 
 new #[Title('Kelola Knowledge Base')] class extends Component {
@@ -27,6 +28,7 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
         $this->validate();
 
         $metadataName = trim($this->file_name);
+        $metadataName = Str::replace(' ', '_', $metadataName);
         if (! str_ends_with(strtolower($metadataName), '.docx')) {
             $metadataName .= '.docx';
         }
@@ -50,10 +52,11 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
 
         // Kirim request ke ai-service untuk ekstraksi & vektorisasi di PostgreSQL
         $aiServiceUrl = config('services.ai_service.url', 'http://127.0.0.1:8080');
+        $timeout = config('services.ai_service.timeout', 180);
         $fileContents = Storage::disk('local')->get($storedPath);
 
         try {
-            $response = Http::timeout(120)
+            $response = Http::timeout($timeout)
                 ->attach('file', $fileContents, $metadataName)
                 ->post("{$aiServiceUrl}/service/createnewknowledge", [
                     'filename' => $metadataName,
@@ -86,12 +89,13 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
         }
 
         $aiServiceUrl = config('services.ai_service.url', 'http://127.0.0.1:8080');
+        $timeout = config('services.ai_service.timeout', 180);
         $fileContents = Storage::disk('local')->get($doc->filename);
 
         $doc->update(['status' => 'processing']);
 
         try {
-            $response = Http::timeout(120)
+            $response = Http::timeout($timeout)
                 ->attach('file', $fileContents, $doc->metadata_name)
                 ->post("{$aiServiceUrl}/service/createnewknowledge", [
                     'filename' => $doc->metadata_name,
@@ -294,7 +298,13 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
             </div>
 
             <flux:field>
-                <flux:input wire:model="file_name" label="Nama File (Metadata Unik)" placeholder="Contoh: panduan_pmb_2026" />
+                <flux:input
+                    wire:model="file_name"
+                    label="Nama File (Metadata Unik)"
+                    placeholder="Contoh: panduan_pmb_2026"
+                    x-on:input="$event.target.value = $event.target.value.replace(/\s+/g, '_')"
+                />
+                <flux:description class="text-xs">Spasi akan otomatis diubah menjadi underscore (_).</flux:description>
                 <flux:error name="file_name" />
             </flux:field>
 
