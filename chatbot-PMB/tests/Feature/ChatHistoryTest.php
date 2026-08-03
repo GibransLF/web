@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ChatbotSetting;
 use App\Models\ChatHistory;
 use App\Models\User;
 use Livewire\Livewire;
@@ -21,9 +22,10 @@ test('chatbot saves user_id when authenticated user sends message', function () 
     $user = User::factory()->create(['name' => 'Admin PMB']);
     $this->actingAs($user);
 
-    Livewire::test('pages::chat')
+    Livewire::test('chat-widget')
         ->set('message', 'Berapa biaya pendaftaran PMB?')
-        ->call('sendMessage');
+        ->call('sendMessage')
+        ->call('fetchAiResponse');
 
     $history = ChatHistory::first();
     expect($history)->not->toBeNull()
@@ -32,9 +34,10 @@ test('chatbot saves user_id when authenticated user sends message', function () 
 });
 
 test('chatbot saves user_id as null when unauthenticated guest sends message', function () {
-    Livewire::test('pages::chat')
+    Livewire::test('chat-widget')
         ->set('message', 'Persyaratan pendaftaran?')
-        ->call('sendMessage');
+        ->call('sendMessage')
+        ->call('fetchAiResponse');
 
     $history = ChatHistory::first();
     expect($history)->not->toBeNull()
@@ -84,4 +87,65 @@ test('chat history can be cleared', function () {
         ->call('clearAllHistory');
 
     expect(ChatHistory::count())->toBe(0);
+});
+
+test('guest chat history is restored on component mount', function () {
+    session()->put('pmb_guest_id', 'guest_test_123');
+
+    ChatHistory::create([
+        'guest_id' => 'guest_test_123',
+        'question' => 'Berapa biaya kuliah?',
+        'answer' => 'Biaya kuliah Rp 3.500.000 per semester.',
+    ]);
+
+    Livewire::test('chat-widget')
+        ->assertSee('Berapa biaya kuliah?')
+        ->assertSee('Biaya kuliah Rp 3.500.000 per semester.');
+});
+
+test('authenticated user chat history is restored for today only on component mount', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    // Yesterday's chat
+    $oldChat = ChatHistory::create([
+        'user_id' => $user->id,
+        'guest_id' => 'guest_old',
+        'question' => 'Pertanyaan Kemarin',
+        'answer' => 'Jawaban Kemarin',
+    ]);
+    $oldChat->timestamps = false;
+    $oldChat->created_at = now()->subDays(2);
+    $oldChat->save();
+
+    // Today's chat
+    ChatHistory::create([
+        'user_id' => $user->id,
+        'guest_id' => 'guest_today',
+        'question' => 'Pertanyaan Hari Ini',
+        'answer' => 'Jawaban Hari Ini',
+        'created_at' => now(),
+    ]);
+
+    Livewire::test('chat-widget')
+        ->assertSee('Pertanyaan Hari Ini')
+        ->assertSee('Jawaban Hari Ini')
+        ->assertDontSee('Pertanyaan Kemarin');
+});
+
+test('message input collapses multiple spaces via regex', function () {
+    Livewire::test('chat-widget')
+        ->set('message', '   Berapa   biaya   pendaftaran   PMB?   ')
+        ->call('sendMessage')
+        ->assertSet('messages.0.content', 'Berapa biaya pendaftaran PMB?');
+});
+
+test('history payload sent to AI service is limited by max_chat_memory setting', function () {
+    ChatbotSetting::query()->update(['max_chat_memory' => 1]);
+    $component = Livewire::test('chat-widget');
+    expect($component->get('maxChatMemory'))->toBe(1);
+
+    ChatbotSetting::query()->update(['max_chat_memory' => 0]);
+    $componentZero = Livewire::test('chat-widget');
+    expect($componentZero->get('maxChatMemory'))->toBe(0);
 });

@@ -10,16 +10,13 @@ class ChatHistory extends Model
 {
     use HasFactory;
 
+    public const UPDATED_AT = null;
+
     protected $fillable = [
         'user_id',
         'guest_id',
         'question',
         'answer',
-        'source_documents',
-    ];
-
-    protected $casts = [
-        'source_documents' => 'array',
     ];
 
     public function user(): BelongsTo

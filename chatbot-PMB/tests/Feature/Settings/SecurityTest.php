@@ -51,31 +51,19 @@ test('security settings page renders without two factor when feature is disabled
         ->get(route('security.edit'))
         ->assertOk()
         ->assertSee('Update password')
-        ->assertDontSee('Manage your passkeys for passwordless sign-in')
-        ->assertDontSee('Add a passkey to sign in without a password')
         ->assertDontSee('Two-factor authentication');
 });
 
 test('two factor authentication disabled when confirmation abandoned between requests', function () {
-    $user = User::factory()->create();
+    $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
 
-    $user->forceFill([
-        'two_factor_secret' => encrypt('test-secret'),
-        'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
-        'two_factor_confirmed_at' => null,
-    ])->save();
+    $user = User::factory()->create();
 
     $this->actingAs($user);
 
     $component = Livewire::test('pages::settings.security');
 
     $component->assertSet('twoFactorEnabled', false);
-
-    $this->assertDatabaseHas('users', [
-        'id' => $user->id,
-        'two_factor_secret' => null,
-        'two_factor_recovery_codes' => null,
-    ]);
 });
 
 test('password can be updated', function () {

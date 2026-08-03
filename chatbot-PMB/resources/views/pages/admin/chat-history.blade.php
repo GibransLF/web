@@ -110,19 +110,6 @@ new #[Title('Chat History')] class extends Component {
                         <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-4 py-3 rounded-2xl rounded-tl-sm text-sm border border-zinc-200 dark:border-zinc-700 shadow-sm leading-relaxed">
                             {{ $msg->answer }}
                         </div>
-                        @php
-                            $filteredDocs = array_filter($msg->source_documents ?? [], fn($doc) => !str_contains($doc, 'Informasi_Umum_PMB'));
-                        @endphp
-                        @if(!empty($filteredDocs))
-                            <div class="flex flex-wrap gap-1.5 mt-2 ml-1">
-                                @foreach($filteredDocs as $doc)
-                                    <span class="inline-flex items-center gap-1 text-[10px] bg-blue-50 dark:bg-blue-950/50 text-[#1B287D] dark:text-blue-300 px-2 py-0.5 rounded-md font-medium border border-blue-200 dark:border-blue-800">
-                                        <flux:icon icon="document-text" class="w-3 h-3" />
-                                        {{ $doc }}
-                                    </span>
-                                @endforeach
-                            </div>
-                        @endif
                     </div>
                 </div>
             </div>

@@ -17,8 +17,7 @@ return new class extends Migration
             $table->string('guest_id')->nullable()->index();
             $table->text('question');
             $table->text('answer');
-            $table->json('source_documents')->nullable();
-            $table->timestamps();
+            $table->timestamp('created_at')->nullable();
         });
     }
 

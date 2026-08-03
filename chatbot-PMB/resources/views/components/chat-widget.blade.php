@@ -14,6 +14,7 @@ new class extends Component {
     public int $maxCharacter = 500;
     public int $guestMessageCount = 0;
     public int $guestMaxLimit = 4;
+    public int $maxChatMemory = 1;
     public string $adminWhatsappUrl = '';
 
     public function mount(): void
@@ -26,6 +27,7 @@ new class extends Component {
         $setting = ChatbotSetting::current();
         $this->maxCharacter = $setting->max_input_character;
         $this->guestMaxLimit = $setting->max_guest_chat;
+        $this->maxChatMemory = $setting->max_chat_memory;
         $this->adminWhatsappUrl = config('services.whatsapp_admin', 'https://wa.me/628112342113');
 
 
@@ -34,15 +36,27 @@ new class extends Component {
             $this->guestMessageCount = ChatHistory::where('guest_id', $this->guestId)->count();
         }
 
-        // Initial welcome message
-        $this->messages = [
-            [
+        $this->messages = [];
+
+        // Load past chat history from database if available
+        $historyQuery = auth()->check()
+            ? ChatHistory::where('user_id', auth()->id())->whereDate('created_at', today())
+            : ChatHistory::where('guest_id', $this->guestId);
+
+        $pastChats = $historyQuery->orderBy('created_at', 'asc')->get();
+
+        foreach ($pastChats as $chat) {
+            $this->messages[] = [
+                'role' => 'user',
+                'content' => $chat->question,
+                'time' => $chat->created_at ? $chat->created_at->format('H:i') : now()->format('H:i'),
+            ];
+            $this->messages[] = [
                 'role' => 'ai',
-                'content' => "Halo! 👋 Selamat datang di PMB STMIK Bandung.\nSaya AI Asisten Akademik PMB yang siap membantu Anda menjawab pertanyaan seputar PMB. \n\nAda yang bisa saya bantu?",
-                'sources' => [],
-                'time' => now()->format('H:i'),
-            ]
-        ];
+                'content' => $chat->answer,
+                'time' => $chat->created_at ? $chat->created_at->format('H:i') : now()->format('H:i'),
+            ];
+        }
     }
 
     public function isGuestLimitReached(): bool
@@ -56,7 +70,7 @@ new class extends Component {
             return;
         }
 
-        $cleanInput = trim($this->message);
+        $cleanInput = preg_replace('/\s+/', ' ', trim($this->message));
         if (empty($cleanInput)) return;
 
         if (mb_strlen($cleanInput) > $this->maxCharacter) {
@@ -69,7 +83,6 @@ new class extends Component {
         $this->messages[] = [
             'role' => 'user',
             'content' => $cleanInput,
-            'sources' => [],
             'time' => $currentTime,
         ];
 
@@ -113,11 +126,17 @@ new class extends Component {
             }
         }
 
+        // Limit history payload according to max_chat_memory setting
+        if ($this->maxChatMemory <= 0) {
+            $historyPayload = [];
+        } elseif (count($historyPayload) > $this->maxChatMemory) {
+            $historyPayload = array_slice($historyPayload, -$this->maxChatMemory);
+        }
+
         // Kirim HTTP request ke FastAPI AI Service (/service/chat)
         $aiServiceUrl = config('services.ai_service.url', 'http://127.0.0.1:8080');
         $timeout = config('services.ai_service.timeout', 180);
         $aiAnswerText = '';
-        $sources = [];
 
         try {
             $response = Http::timeout($timeout)->post("{$aiServiceUrl}/service/chat", [
@@ -138,7 +157,6 @@ new class extends Component {
         $this->messages[] = [
             'role' => 'ai',
             'content' => $aiAnswerText,
-            'sources' => $sources,
             'time' => now()->format('H:i'),
         ];
 
@@ -149,7 +167,6 @@ new class extends Component {
                 'guest_id' => $this->guestId,
                 'question' => $userQuestion,
                 'answer' => $aiAnswerText,
-                'source_documents' => $sources,
             ]);
         } catch (\Throwable $e) {
             // Ignore DB log error if unreachable
@@ -196,6 +213,17 @@ new class extends Component {
     <div wire:navigate:scroll x-ref="chatContainer"
         @scroll-bottom.window="scrollToBottom()"
         class="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-50 dark:bg-zinc-800/50">
+        <!-- Initial Welcome Message (Always rendered at the top of UI) -->
+        <div class="flex flex-col items-start max-w-[85%] space-y-1">
+            <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-sm border border-zinc-200 dark:border-zinc-700 shadow-sm leading-relaxed whitespace-pre-line">Halo! 👋 Selamat datang di PMB STMIK Bandung.
+Saya AI Asisten Akademik PMB yang siap membantu Anda menjawab pertanyaan seputar PMB. 
+
+Ada yang bisa saya bantu?</div>
+            <div class="px-1">
+                <span class="text-[10px] text-zinc-400 font-medium">{{ now()->format('H:i') }}</span>
+            </div>
+        </div>
+
         @foreach($messages as $msg)
             @if($msg['role'] === 'ai')
                 <div class="flex flex-col items-start max-w-[85%] space-y-1">
