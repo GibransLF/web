@@ -67,7 +67,7 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
             if ($response->successful() && $response->json('success')) {
                 $chunksCount = $response->json('chunks', 0);
                 $doc->update(['status' => 'success']);
-                session()->flash('success', "Dokumen DOCX berhasil diunggah dan divektorisasi ({$chunksCount} chunk disimpan ke PostgreSQL)!");
+                session()->flash('success', "Dokumen DOCX berhasil diunggah dan divektorisasi ({$chunksCount} chunk disimpan ke Database!)!");
             } else {
                 $doc->update(['status' => 'failed']);
                 $errorMsg = $response->json('detail') ?? $response->json('message') ?? 'Gagal membuat vektor di AI service.';
@@ -106,7 +106,7 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
             if ($response->successful() && $response->json('success')) {
                 $chunksCount = $response->json('chunks', 0);
                 $doc->update(['status' => 'success']);
-                session()->flash('success', "Proses re-index vektorisasi berhasil ({$chunksCount} chunk disimpan ke PostgreSQL)!");
+                session()->flash('success', "Proses re-index vektorisasi berhasil ({$chunksCount} chunk disimpan ke Database)!");
             } else {
                 $doc->update(['status' => 'failed']);
                 $errorMsg = $response->json('detail') ?? $response->json('message') ?? 'Gagal memproses vektor AI.';
@@ -147,7 +147,7 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
     <!-- Re-indexing Active Loading Banner -->
     <div wire:loading wire:target="reindexDocument" class="p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg text-sm flex items-center gap-2 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400">
         <flux:icon icon="arrow-path" class="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin shrink-0" />
-        <span>Sedang memproses ulang vektorisasi AI ke PostgreSQL. Mohon tunggu beberapa saat...</span>
+        <span>Sedang memproses ulang vektorisasi AI ke Database. Mohon tunggu beberapa saat...</span>
     </div>
 
     <!-- Flash Alerts -->
@@ -305,7 +305,7 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
                     label="Nama File (Unik)"
                     placeholder="Contoh: panduan pmb 2026"
                 />
-                <flux:description class="text-xs">Spasi yang diketik akan otomatis diubah menjadi underscore (_) saat disimpan.</flux:description>
+                <flux:description class="text-xs">Spasi otomatis diubah menjadi underscore (_) saat disimpan.</flux:description>
                 <flux:error name="file_name" />
             </flux:field>
 

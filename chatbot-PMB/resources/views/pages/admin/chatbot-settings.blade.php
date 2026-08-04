@@ -8,7 +8,7 @@ new #[Title('Chatbot Settings')] class extends Component {
     public int $max_input_character = 50;
     public int $max_chat_memory = 0;
     public int $max_guest_chat = 4;
-    public int $top_k = 5;
+    public int $top_k = 8;
     public int $fetch_k = 15;
     public float $temperature = 0.2;
     public string $system_prompt = '';

@@ -6,7 +6,7 @@ import psycopg2
 from datetime import datetime
 from fastapi import UploadFile
 from markitdown import MarkItDown
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 from config import settings
 from services.db import get_db_connection
@@ -15,8 +15,9 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
     """
     Logika pemrosesan upload Word (DOCX):
     1. Konversi DOCX ke Markdown via MarkItDown (temp file).
-    2. Split Markdown menjadi chunks dengan RecursiveCharacterTextSplitter & Filter Chunk Sampah.
-    3. Simpan chunks & vector embedding ke database PostgreSQL (tabel knowledge_chunks).
+    2. Split Markdown berbasis Header (MarkdownHeaderTextSplitter) & RecursiveCharacterTextSplitter.
+    3. Simpan heading di metadata dan di awal chunk.
+    4. Simpan chunks & vector embedding ke database PostgreSQL (tabel knowledge_chunks).
     """
     temp_path = None
     try:
@@ -53,22 +54,46 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
 
         markdown_content = pattern.sub(replace, markdown_content)
 
-        # 3. Potong teks markdown menjadi chunks menggunakan RecursiveCharacterTextSplitter
-        splitter = RecursiveCharacterTextSplitter(
+        # 3. Potong teks markdown berbasis Header (MarkdownHeaderTextSplitter) & RecursiveCharacterTextSplitter
+        headers_to_split_on = [
+            ("#", "Header 1"),
+            ("##", "Header 2"),
+            ("###", "Header 3"),
+            ("####", "Header 4")
+        ]
+        header_splitter = MarkdownHeaderTextSplitter(
+            headers_to_split_on=headers_to_split_on,
+            strip_headers=True
+        )
+        header_splits = header_splitter.split_text(markdown_content)
+
+        text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.CHUNK_SIZE,
             chunk_overlap=settings.CHUNK_OVERLAP,
-            separators=["\n\n", "\n", "\n#", ""]
+            separators=["\n\n", "\n", " ", ""]
         )
-        raw_docs = splitter.create_documents(
-            texts=[markdown_content],
-            metadatas=[{"source": filename}]
-        )
+        raw_docs = text_splitter.split_documents(header_splits)
 
-        # 4. Filter chunk sampah/header kosong pendek
+        # 4. Tambahkan prefix heading ke page_content & filter chunk kosong/pendek
         docs = []
         for doc in raw_docs:
-            clean_text = doc.page_content.strip()
-            if len(clean_text) >= 100 and not (clean_text.startswith("#") and "\n" not in clean_text):
+            clean_body = doc.page_content.strip()
+            if not clean_body:
+                continue
+
+            # Buat prefix heading dari metadata
+            header_prefix_parts = []
+            for h_level, h_key in [("#", "Header 1"), ("##", "Header 2"), ("###", "Header 3"), ("####", "Header 4")]:
+                if h_key in doc.metadata:
+                    header_prefix_parts.append(f"{h_level} {doc.metadata[h_key]}")
+
+            header_prefix = "\n".join(header_prefix_parts)
+            if header_prefix:
+                doc.page_content = f"{header_prefix}\n\n{clean_body}"
+            else:
+                doc.page_content = clean_body
+
+            if len(doc.page_content.strip()) >= 50:
                 docs.append(doc)
 
         if not docs:
@@ -113,10 +138,13 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
 
         # Hasilkan embedding dan simpan ke knowledge_chunks beserta metadata
         now = datetime.now()
-        for idx, doc in enumerate(docs):
+        source_filename = os.path.basename(filename)
+        for doc in docs:
             vector = embeddings.embed_query(doc.page_content)
             vector_str = json.dumps(vector)
-            meta_json = json.dumps({"source": filename, "chunk_index": idx})
+            meta_dict = {"source": source_filename}
+            meta_dict.update(doc.metadata)
+            meta_json = json.dumps(meta_dict)
             cur.execute(
                 """
                 INSERT INTO knowledge_chunks (knowledge_base_id, chunk_text, embedding, metadata, created_at)
