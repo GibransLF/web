@@ -1,8 +1,17 @@
 <x-layouts.landing title="AI Assistant PMB STMIK Bandung - Pusat Layanan Informasi Pendaftaran">
-    <div class="space-y-20 pb-20">
+    <div class="space-y-10 pb-16">
         <!-- Hero Section -->
         <section>
-            <div class="bg-[#1B287D] rounded-3xl p-8 lg:p-14 flex flex-col md:flex-row items-center justify-between text-white overflow-hidden relative shadow-lg border border-blue-900/50">
+            <div class="bg-[#1B287D] rounded-3xl p-8 lg:p-14 flex flex-col md:flex-row items-center justify-between text-white overflow-hidden relative shadow-lg border border-blue-900/50 min-h-[320px]">
+                
+                <!-- Right Side Fade Background Image -->
+                <div class="absolute right-0 top-0 bottom-0 w-full md:w-1/2 lg:w-3/5 pointer-events-none overflow-hidden">
+                    <img src="{{ asset('images/stmik.jpg') }}" alt="Kampus STMIK Bandung" class="w-full h-full object-cover object-center opacity-30 md:opacity-40">
+                    <div class="absolute inset-0 bg-gradient-to-r from-[#1B287D] via-[#1B287D]/75 to-transparent"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#1B287D]/50 via-transparent to-[#1B287D]/30"></div>
+                </div>
+
+                <!-- Left Content Area -->
                 <div class="relative z-10 max-w-2xl space-y-6">
                     <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight text-white">
                         Layanan Informasi PMB <br class="hidden lg:block" />
@@ -31,68 +40,48 @@
             </div>
         </section>
 
-        <!-- Layanan Unggulan -->
-        <section>
-            <h2 class="text-3xl font-bold text-[#1B287D] dark:text-[#F9CE04] mb-8">Layanan Unggulan Kami</h2>
+        <!-- External Website Navigation Section (Below Hero) -->
+        <section class="space-y-4">
+            <h2 class="text-lg font-bold text-[#1B287D] dark:text-[#F9CE04] tracking-wide uppercase">
+                Tautan Website PMB STMIK Bandung
+            </h2>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Card 1 -->
-                <flux:card
-                    class="border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-[#1B287D] dark:hover:border-[#F9CE04] hover:bg-indigo-50/50 dark:hover:bg-zinc-800/50 transition-all duration-300 bg-white dark:bg-zinc-900 rounded-2xl p-6 cursor-pointer">
-                    <div
-                        class="w-14 h-14 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-[#1B287D] dark:text-indigo-400 mb-6">
-                        <flux:icon name="light-bulb" class="w-7 h-7" />
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <!-- Beranda -->
+                <a href="https://pmb.stmik-bandung.ac.id/" target="_blank"
+                    class="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm hover:shadow-md hover:border-[#1B287D] dark:hover:border-[#F9CE04] hover:-translate-y-0.5 transition-all group">
+                    <span class="font-bold text-zinc-800 dark:text-zinc-100 group-hover:text-[#1B287D] dark:group-hover:text-[#F9CE04] transition-colors">Beranda</span>
+                    <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-zinc-800 group-hover:bg-[#1B287D] group-hover:text-[#F9CE04] text-[#1B287D] dark:text-indigo-400 flex items-center justify-center transition-colors">
+                        <flux:icon name="arrow-right" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                     </div>
-                    <flux:heading size="lg" class="mb-3 text-zinc-900 dark:text-white font-semibold text-xl">Smart Campus</flux:heading>
-                    <flux:text class="text-zinc-600 dark:text-zinc-400">
-                        Mengkombinasikan dan Mengimplementasikan proses belajar dalam lingkungan kampus dengan menggunakan Teknologi Informasi canggih.
-                    </flux:text>
-                </flux:card>
+                </a>
 
-                <!-- Card 2 -->
-                <flux:card
-                    class="border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-[#1B287D] dark:hover:border-[#F9CE04] hover:bg-indigo-50/50 dark:hover:bg-zinc-800/50 transition-all duration-300 bg-white dark:bg-zinc-900 rounded-2xl p-6 cursor-pointer">
-                    <div
-                        class="w-14 h-14 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-[#1B287D] dark:text-indigo-400 mb-6">
-                        <flux:icon name="wallet" class="w-7 h-7" />
+                <!-- FAQ -->
+                <a href="https://pmb.stmik-bandung.ac.id/faq" target="_blank"
+                    class="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm hover:shadow-md hover:border-[#1B287D] dark:hover:border-[#F9CE04] hover:-translate-y-0.5 transition-all group">
+                    <span class="font-bold text-zinc-800 dark:text-zinc-100 group-hover:text-[#1B287D] dark:group-hover:text-[#F9CE04] transition-colors">FAQ</span>
+                    <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-zinc-800 group-hover:bg-[#1B287D] group-hover:text-[#F9CE04] text-[#1B287D] dark:text-indigo-400 flex items-center justify-center transition-colors">
+                        <flux:icon name="arrow-right" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                     </div>
-                    <flux:heading size="lg" class="mb-3 text-zinc-900 dark:text-white font-semibold text-xl">Biaya Terjangkau</flux:heading>
-                    <flux:text class="text-zinc-600 dark:text-zinc-400">
-                        Kuliah di STMIK Bandung terdapat biaya kuliah yang dapat diangsur.
-                    </flux:text>
-                </flux:card>
+                </a>
 
-                <!-- Card 3 -->
-                <flux:card
-                    class="border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-[#1B287D] dark:hover:border-[#F9CE04] hover:bg-indigo-50/50 dark:hover:bg-zinc-800/50 transition-all duration-300 bg-white dark:bg-zinc-900 rounded-2xl p-6 cursor-pointer">
-                    <div
-                        class="w-14 h-14 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-[#1B287D] dark:text-indigo-400 mb-6">
-                        <flux:icon name="academic-cap" class="w-7 h-7" />
+                <!-- Biaya -->
+                <a href="https://pmb.stmik-bandung.ac.id/pricing" target="_blank"
+                    class="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm hover:shadow-md hover:border-[#1B287D] dark:hover:border-[#F9CE04] hover:-translate-y-0.5 transition-all group">
+                    <span class="font-bold text-zinc-800 dark:text-zinc-100 group-hover:text-[#1B287D] dark:group-hover:text-[#F9CE04] transition-colors">Biaya</span>
+                    <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-zinc-800 group-hover:bg-[#1B287D] group-hover:text-[#F9CE04] text-[#1B287D] dark:text-indigo-400 flex items-center justify-center transition-colors">
+                        <flux:icon name="arrow-right" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                     </div>
-                    <flux:heading size="lg" class="mb-3 text-zinc-900 dark:text-white font-semibold text-xl">Jaringan Alumni</flux:heading>
-                    <flux:text class="text-zinc-600 dark:text-zinc-400">
-                        Beasiswa Berprestasi, Ikatan Dinas, Atlet, Tidak Mampu, dan lain lain.
-                    </flux:text>
-                </flux:card>
-            </div>
-        </section>
+                </a>
 
-        <!-- Mengenal PMB Universitas -->
-        <section class="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-8 lg:p-12 shadow-sm">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                <div>
-                    <h2 class="text-3xl font-bold text-[#1B287D] dark:text-[#F9CE04] mb-6">Mengenal STMIK Bandung</h2>
-                    <div class="space-y-4 text-lg text-zinc-600 dark:text-zinc-300">
-                        <p>
-                            STMIK Bandung merupakan STMIK pertama di Jawa Barat dan pelopor pendidikan tinggi inforamtika swasta dengan fokus untuk mencetak tenaga profesional dan technopreneur IT.
-                        </p>
+                <!-- Hubungi Kami -->
+                <a href="https://pmb.stmik-bandung.ac.id/contact" target="_blank"
+                    class="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm hover:shadow-md hover:border-[#1B287D] dark:hover:border-[#F9CE04] hover:-translate-y-0.5 transition-all group">
+                    <span class="font-bold text-zinc-800 dark:text-zinc-100 group-hover:text-[#1B287D] dark:group-hover:text-[#F9CE04] transition-colors">Hubungi Kami</span>
+                    <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-zinc-800 group-hover:bg-[#1B287D] group-hover:text-[#F9CE04] text-[#1B287D] dark:text-indigo-400 flex items-center justify-center transition-colors">
+                        <flux:icon name="arrow-right" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                     </div>
-                </div>
-                <div class="relative">
-                    <div class="aspect-4/3 rounded-2xl overflow-hidden shadow-lg bg-zinc-200 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
-                        <img src="{{ asset('images/stmik.jpg') }}" alt="Kampus Utama STMIK Bandung" class="w-full h-full object-cover">
-                    </div>
-                </div>
+                </a>
             </div>
         </section>
     </div>

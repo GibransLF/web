@@ -60,6 +60,21 @@ test('max_chat_memory can be set to zero for no conversation memory', function (
     expect($setting->max_chat_memory)->toBe(0);
 });
 
+test('max_guest_chat can be set to zero to disable guest chat', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::admin.chatbot-settings')
+        ->set('max_guest_chat', 0)
+        ->call('saveSettings')
+        ->assertHasNoErrors()
+        ->assertSee('Konfigurasi Chatbot AI berhasil diperbarui');
+
+    $setting = ChatbotSetting::current()->fresh();
+    expect($setting->max_guest_chat)->toBe(0);
+});
+
 test('fetch_k must be greater than or equal to top_k', function () {
     $user = User::factory()->create();
 

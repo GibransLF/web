@@ -16,7 +16,7 @@ new #[Title('Chatbot Settings')] class extends Component {
     protected array $rules = [
         'max_input_character' => 'required|integer|min:50|max:2000',
         'max_chat_memory' => 'required|integer|min:0|max:10',
-        'max_guest_chat' => 'required|integer|min:1|max:50',
+        'max_guest_chat' => 'required|integer|min:0|max:50',
         'top_k' => 'required|integer|min:1|max:20',
         'fetch_k' => 'required|integer|min:1|max:50',
         'temperature' => 'required|numeric|min:0|max:1',
@@ -31,7 +31,7 @@ new #[Title('Chatbot Settings')] class extends Component {
         'max_chat_memory.min' => 'Memori percakapan minimal 0.',
         'max_chat_memory.max' => 'Memori percakapan maksimal 10.',
         'max_guest_chat.required' => 'Maksimal chat guest wajib diisi.',
-        'max_guest_chat.min' => 'Maksimal chat guest minimal 1.',
+        'max_guest_chat.min' => 'Maksimal chat guest minimal 0.',
         'max_guest_chat.max' => 'Maksimal chat guest maksimal 50.',
         'top_k.required' => 'Nilai Top-K wajib diisi.',
         'top_k.min' => 'Nilai Top-K minimal 1.',
@@ -163,10 +163,10 @@ new #[Title('Chatbot Settings')] class extends Component {
                 <x-settings-field
                     name="max_guest_chat"
                     label="Maksimal Chat Tamu (Guest)"
-                    description="Batas kuota pesan gratis untuk pengunjung tanpa login."
-                    badge="1 - 50 Pesan"
+                    description="Batas kuota pesan gratis untuk pengunjung tanpa login (isi 0 untuk menonaktifkan chat tamu / maintenance)."
+                    badge="0 - 50 Pesan"
                 >
-                    <flux:input type="number" min="1" max="50" wire:model="max_guest_chat" icon="user" />
+                    <flux:input type="number" min="0" max="50" wire:model="max_guest_chat" icon="user" />
                 </x-settings-field>
             </div>
         </x-settings-section-card>
@@ -183,7 +183,7 @@ new #[Title('Chatbot Settings')] class extends Component {
                     name="top_k"
                     label="Nilai Top-K (Final Context Chunks)"
                     description="Jumlah potongan dokumen paling relevan yang dimasukkan ke konteks prompt LLM."
-                    badge="Default: 5"
+                    badge="Default: 8"
                 >
                     <flux:input type="number" min="1" max="20" wire:model="top_k" icon="document-magnifying-glass" />
                 </x-settings-field>

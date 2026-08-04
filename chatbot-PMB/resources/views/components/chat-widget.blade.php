@@ -71,7 +71,7 @@ new class extends Component {
 
     public function isGuestLimitReached(): bool
     {
-        return !auth()->check() && $this->guestMessageCount >= $this->guestMaxLimit;
+        return !auth()->check() && ($this->guestMaxLimit === 0 || $this->guestMessageCount >= $this->guestMaxLimit);
     }
 
     public function sendMessage(): void
@@ -218,14 +218,33 @@ new class extends Component {
     @scroll-bottom.window="scrollToBottom()">
     
     <!-- Header -->
-    <div class="flex items-center gap-3 p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-        <div class="w-10 h-10 rounded-full bg-[#1B287D] flex items-center justify-center text-white shrink-0 shadow-xs">
-            <flux:icon name="sparkles" class="w-5 h-5 text-[#F9CE04]" />
+    <div class="flex items-center justify-between gap-3 p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-[#1B287D] flex items-center justify-center text-white shrink-0 shadow-xs">
+                <flux:icon name="sparkles" class="w-5 h-5 text-[#F9CE04]" />
+            </div>
+            <div class="min-w-0">
+                <h3 class="font-bold text-[#1B287D] dark:text-[#F9CE04] text-sm leading-tight truncate">AI Asisten Akademik PMB</h3>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                    @if(!auth()->check() && $guestMaxLimit === 0)
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        <p class="text-xs font-medium text-amber-600 dark:text-amber-400 truncate">Sedang Perbaikan</p>
+                    @else
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 truncate">Aktif sekarang</p>
+                    @endif
+                </div>
+            </div>
         </div>
-        <div>
-            <h3 class="font-bold text-[#1B287D] dark:text-[#F9CE04] text-sm leading-tight">AI Asisten Akademik PMB</h3>
-            <p class="text-xs text-zinc-500 dark:text-zinc-400">Aktif sekarang</p>
-        </div>
+
+        @if(request()->is('chat'))
+            <a href="/" wire:navigate
+                class="inline-flex items-center justify-center gap-1.5 shrink-0 w-9 h-9 sm:w-auto sm:h-auto sm:px-3.5 sm:py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-[#1B287D] hover:text-white dark:hover:bg-[#F9CE04] dark:hover:text-[#1B287D] text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-all border border-zinc-200 dark:border-zinc-700 shadow-xs"
+                title="Kembali ke Home" aria-label="Kembali ke Home">
+                <flux:icon name="home" class="w-4 h-4 shrink-0" />
+                <span class="hidden sm:inline">Kembali ke Home</span>
+            </a>
+        @endif
     </div>
 
     <!-- Chat Messages -->
@@ -278,13 +297,17 @@ Ada yang bisa saya bantu?</div>
         @if($this->isGuestLimitReached())
             <div class="mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
                 <flux:icon name="clock" class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>Batas {{ $guestMaxLimit }} kali pesan tamu telah tercapai. Silakan tunggu beberapa saat (-/+ 2 jam).</span>
+                @if(!auth()->check() && $guestMaxLimit === 0)
+                    <span>Layanan chat tamu saat ini sedang dalam perbaikan (maintenance). Silakan hubungi admin via WhatsApp.</span>
+                @else
+                    <span>Batas {{ $guestMaxLimit }} kali pesan tamu telah tercapai. Silakan tunggu beberapa saat (-/+ 2 jam).</span>
+                @endif
             </div>
         @endif
 
         <form wire:submit.prevent="sendMessage" @submit="$nextTick(() => scrollToBottom())" class="flex items-center gap-2">
             <div class="relative flex-1">
-                <flux:input wire:model="message" maxlength="{{ $maxCharacter }}" wire:keydown.enter.prevent="sendMessage" wire:loading.attr="disabled" wire:target="sendMessage" :disabled="$this->isGuestLimitReached() || $isProcessing" placeholder="{{ $this->isGuestLimitReached() ? 'Batas pesan tamu tercapai. Silakan tunggu beberapa saat.' : ($isProcessing ? 'AI sedang memproses pesan Anda...' : 'Tulis pesan Anda di sini (maks ' . $maxCharacter . ' karakter)...') }}"
+                <flux:input wire:model="message" autocomplete="off" maxlength="{{ $maxCharacter }}" wire:keydown.enter.prevent="sendMessage" wire:loading.attr="disabled" wire:target="sendMessage" :disabled="$this->isGuestLimitReached() || $isProcessing" placeholder="{{ $this->isGuestLimitReached() ? (!auth()->check() && $guestMaxLimit === 0 ? 'Fitur chat sedang dalam perbaikan...' : 'Batas pesan tamu tercapai.') : ($isProcessing ? 'AI sedang memproses pesan...' : 'Tulis pesan... (maks ' . $maxCharacter . ' karakter)') }}"
                     class="pr-10 bg-[#F5F5F5] border-zinc-200 focus:border-[#1B287D] dark:bg-zinc-800 dark:border-zinc-700 w-full rounded-lg disabled:opacity-60 disabled:cursor-not-allowed text-sm" />
                 <button type="submit" wire:loading.attr="disabled" wire:target="sendMessage" @disabled($this->isGuestLimitReached() || $isProcessing)
                     class="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#1B287D] dark:hover:text-[#F9CE04] transition-colors p-1 disabled:opacity-40 disabled:cursor-not-allowed"
