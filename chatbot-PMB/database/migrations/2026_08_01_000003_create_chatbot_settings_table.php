@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('chatbot_settings', function (Blueprint $table) {
             $table->id();
-            $table->integer('max_input_character')->default(500);
-            $table->integer('max_chat_memory')->default(1);
+            $table->integer('max_input_character')->default(50);
+            $table->integer('max_chat_memory')->default(0);
             $table->integer('max_guest_chat')->default(4);
             $table->integer('top_k')->default(5);
             $table->integer('fetch_k')->default(15);

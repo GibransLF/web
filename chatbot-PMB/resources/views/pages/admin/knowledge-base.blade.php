@@ -27,25 +27,27 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
     {
         $this->validate();
 
-        $metadataName = trim($this->file_name);
-        $metadataName = Str::replace(' ', '_', $metadataName);
-        if (! str_ends_with(strtolower($metadataName), '.docx')) {
-            $metadataName .= '.docx';
+        $fileNameClean = trim($this->file_name);
+        $fileNameClean = preg_replace('/\s+/', '_', $fileNameClean);
+        if (! str_ends_with(strtolower($fileNameClean), '.docx')) {
+            $fileNameClean .= '.docx';
         }
 
-        // Pengecekan nama metadata duplikat
-        if (KnowledgeBase::where('metadata_name', $metadataName)->exists()) {
-            $this->addError('file_name', 'Dokumen dengan nama metadata tersebut sudah ada di Knowledge Base.');
+        $storedPath = 'knowledge_bases/' . $fileNameClean;
+
+        // Pengecekan path duplikat
+        if (KnowledgeBase::where('path', $storedPath)->exists()) {
+            $this->addError('file_name', 'Dokumen dengan nama tersebut sudah ada di Knowledge Base.');
             return;
         }
 
-        // Simpan file ke private storage dengan nama berkas sesuai metadata (storeAs)
-        $storedPath = $this->file->storeAs('knowledge_bases', $metadataName, 'local');
+        // Simpan file ke private storage
+        $storedPath = $this->file->storeAs('knowledge_bases', $fileNameClean, 'local');
 
         $doc = KnowledgeBase::create([
             'user_id' => auth()->id(),
             'filename' => $storedPath,
-            'metadata_name' => $metadataName,
+            'path' => $storedPath,
             'status' => 'processing',
             'deskripsi' => $this->deskripsi,
         ]);
@@ -57,9 +59,9 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
 
         try {
             $response = Http::timeout($timeout)
-                ->attach('file', $fileContents, $metadataName)
+                ->attach('file', $fileContents, basename($storedPath))
                 ->post("{$aiServiceUrl}/service/createnewknowledge", [
-                    'filename' => $metadataName,
+                    'filename' => $storedPath,
                 ]);
 
             if ($response->successful() && $response->json('success')) {
@@ -96,9 +98,9 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
 
         try {
             $response = Http::timeout($timeout)
-                ->attach('file', $fileContents, $doc->metadata_name)
+                ->attach('file', $fileContents, basename($doc->path))
                 ->post("{$aiServiceUrl}/service/createnewknowledge", [
-                    'filename' => $doc->metadata_name,
+                    'filename' => $doc->path,
                 ]);
 
             if ($response->successful() && $response->json('success')) {
@@ -120,7 +122,7 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
     {
         $doc = KnowledgeBase::find($id);
         if ($doc && Storage::disk('local')->exists($doc->filename)) {
-            return Storage::disk('local')->download($doc->filename, $doc->metadata_name);
+            return Storage::disk('local')->download($doc->filename, basename($doc->path));
         }
 
         session()->flash('error', 'Dokumen tidak ditemukan di penyimpanan private.');
@@ -204,13 +206,13 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
                 </tr>
             </thead>
             <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
-                @forelse(KnowledgeBase::with('user')->withCount('chunks')->where('metadata_name', 'like', '%'.$search.'%')->orWhere('deskripsi', 'like', '%'.$search.'%')->latest()->get() as $doc)
+                @forelse(KnowledgeBase::with('user')->withCount('chunks')->where('path', 'like', '%'.$search.'%')->orWhere('deskripsi', 'like', '%'.$search.'%')->latest()->get() as $doc)
                     <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                         <td class="p-3 font-medium">
                             <div class="flex items-start gap-2">
                                 <flux:icon icon="document-text" class="w-5 h-5 text-[#1B287D] dark:text-blue-400 shrink-0 mt-0.5" />
                                 <div>
-                                    <span class="font-semibold text-zinc-900 dark:text-white block">{{ $doc->metadata_name }}</span>
+                                    <span class="font-semibold text-zinc-900 dark:text-white block">{{ basename($doc->path) }}</span>
                                     <div class="flex items-center gap-1 text-[11px] text-zinc-500 font-normal mt-0.5">
                                         <flux:icon icon="user-circle" class="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                                         <span>Diunggah oleh: {{ $doc->user->name ?? 'Sistem' }}</span>
@@ -300,11 +302,10 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
             <flux:field>
                 <flux:input
                     wire:model="file_name"
-                    label="Nama File (Metadata Unik)"
-                    placeholder="Contoh: panduan_pmb_2026"
-                    x-on:input="$event.target.value = $event.target.value.replace(/\s+/g, '_')"
+                    label="Nama File (Unik)"
+                    placeholder="Contoh: panduan pmb 2026"
                 />
-                <flux:description class="text-xs">Spasi akan otomatis diubah menjadi underscore (_).</flux:description>
+                <flux:description class="text-xs">Spasi yang diketik akan otomatis diubah menjadi underscore (_) saat disimpan.</flux:description>
                 <flux:error name="file_name" />
             </flux:field>
 

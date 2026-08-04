@@ -6,6 +6,7 @@ Route::view('/', 'welcome')->name('home');
 Route::livewire('chat', 'pages::chat')->name('chat');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::redirect('admin', 'admin/dashboard');
     Route::redirect('dashboard', 'admin/dashboard');
     Route::view('admin/dashboard', 'dashboard')->name('dashboard');
     Route::livewire('admin/knowledge-base', 'pages::admin.knowledge-base')->name('admin.knowledge-base');

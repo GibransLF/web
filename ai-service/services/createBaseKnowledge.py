@@ -74,25 +74,36 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
         if not docs:
             return 0
 
-        # 5. Inisialisasi Ollama Embeddings
+        # 5. Inisialisasi Embedding Provider (Mode 1: Ollama Lokal | Mode 2: OpenRouter Cloud)
+        # ------------------------------------------------------------------------------
+        # MODE 1 (AKTIF DEFAULT): Ollama Embeddings Lokal
+        from langchain_ollama import OllamaEmbeddings
         embeddings = OllamaEmbeddings(
             base_url=settings.OLLAMA_BASE_URL,
             model=settings.OLLAMA_EMBEDDING_MODEL
         )
 
+        # MODE 2 (OPSIONAL): OpenRouter Cloud Embeddings
+        # from langchain_openrouter import OpenRouterEmbeddings
+        # embeddings = OpenRouterEmbeddings(
+        #     api_key=settings.OPENROUTER_API_KEY,
+        #     model=settings.OPENROUTER_EMBEDDING_MODEL
+        # )
+        # ------------------------------------------------------------------------------
+
         # 6. Koneksi ke PostgreSQL database pmb-rag via helper terpusat
         conn = get_db_connection(register_pgvector=True)
         cur = conn.cursor()
 
-        # Cari ID knowledge_bases berdasarkan metadata_name
-        cur.execute("SELECT id FROM knowledge_bases WHERE metadata_name = %s", (filename,))
+        # Cari ID knowledge_bases berdasarkan path
+        cur.execute("SELECT id FROM knowledge_bases WHERE path = %s", (filename,))
         row = cur.fetchone()
         if row:
             kb_id = row[0]
         else:
             now = datetime.now()
             cur.execute(
-                "INSERT INTO knowledge_bases (filename, metadata_name, created_at) VALUES (%s, %s, %s) RETURNING id",
+                "INSERT INTO knowledge_bases (filename, path, created_at) VALUES (%s, %s, %s) RETURNING id",
                 (filename, filename, now)
             )
             kb_id = cur.fetchone()[0]
@@ -100,17 +111,18 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
         # Hapus chunk lama jika ada
         cur.execute("DELETE FROM knowledge_chunks WHERE knowledge_base_id = %s", (kb_id,))
 
-        # Hasilkan embedding dan simpan ke knowledge_chunks
+        # Hasilkan embedding dan simpan ke knowledge_chunks beserta metadata
         now = datetime.now()
-        for doc in docs:
+        for idx, doc in enumerate(docs):
             vector = embeddings.embed_query(doc.page_content)
             vector_str = json.dumps(vector)
+            meta_json = json.dumps({"source": filename, "chunk_index": idx})
             cur.execute(
                 """
-                INSERT INTO knowledge_chunks (knowledge_base_id, chunk_text, embedding, created_at)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO knowledge_chunks (knowledge_base_id, chunk_text, embedding, metadata, created_at)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
-                (kb_id, doc.page_content, vector_str, now)
+                (kb_id, doc.page_content, vector_str, meta_json, now)
             )
 
         conn.commit()

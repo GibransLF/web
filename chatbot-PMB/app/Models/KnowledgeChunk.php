@@ -12,10 +12,12 @@ class KnowledgeChunk extends Model
         'knowledge_base_id',
         'chunk_text',
         'embedding',
+        'metadata',
     ];
 
     protected $casts = [
         'embedding' => 'array',
+        'metadata' => 'array',
     ];
 
     public function knowledgeBase()

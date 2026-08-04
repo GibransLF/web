@@ -3,8 +3,8 @@
 use Livewire\Component;
 use App\Models\ChatbotSetting;
 use App\Models\ChatHistory;
+use App\Jobs\ProcessAiChatResponse;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Http;
 
 new class extends Component {
     public string $guestId = '';
@@ -16,6 +16,10 @@ new class extends Component {
     public int $guestMaxLimit = 4;
     public int $maxChatMemory = 1;
     public string $adminWhatsappUrl = '';
+
+    public bool $isProcessing = false;
+    public ?int $pendingHistoryId = null;
+    public int $pollAttempts = 0;
 
     public function mount(): void
     {
@@ -29,7 +33,6 @@ new class extends Component {
         $this->guestMaxLimit = $setting->max_guest_chat;
         $this->maxChatMemory = $setting->max_chat_memory;
         $this->adminWhatsappUrl = config('services.whatsapp_admin', 'https://wa.me/628112342113');
-
 
         // Count messages sent by this guest session
         if (!auth()->check()) {
@@ -51,11 +54,18 @@ new class extends Component {
                 'content' => $chat->question,
                 'time' => $chat->created_at ? $chat->created_at->format('H:i') : now()->format('H:i'),
             ];
-            $this->messages[] = [
-                'role' => 'ai',
-                'content' => $chat->answer,
-                'time' => $chat->created_at ? $chat->created_at->format('H:i') : now()->format('H:i'),
-            ];
+
+            if ($chat->status === 'pending') {
+                $this->isProcessing = true;
+                $this->pendingHistoryId = $chat->id;
+                $this->pollAttempts = 0;
+            } elseif ($chat->answer !== null) {
+                $this->messages[] = [
+                    'role' => 'ai',
+                    'content' => $chat->answer,
+                    'time' => $chat->created_at ? $chat->created_at->format('H:i') : now()->format('H:i'),
+                ];
+            }
         }
     }
 
@@ -66,7 +76,7 @@ new class extends Component {
 
     public function sendMessage(): void
     {
-        if ($this->isGuestLimitReached()) {
+        if ($this->isGuestLimitReached() || $this->isProcessing) {
             return;
         }
 
@@ -86,34 +96,11 @@ new class extends Component {
             'time' => $currentTime,
         ];
 
-        $this->message = '';
-
-        if (!auth()->check()) {
-            $this->guestMessageCount++;
-        }
-
-        $this->dispatch('scroll-bottom');
-
-        // Step 2: Trigger async AI response fetch on client
-        $this->js('$wire.fetchAiResponse()');
-    }
-
-    public function fetchAiResponse(): void
-    {
-        if (empty($this->messages)) {
-            return;
-        }
-
-        $lastIndex = count($this->messages) - 1;
-        if ($this->messages[$lastIndex]['role'] !== 'user') {
-            return;
-        }
-        $userQuestion = $this->messages[$lastIndex]['content'];
-
-        // Susun history percakapan dari $this->messages (sebelum pertanyaan terakhir)
+        // Step 2: Prepare history payload according to maxChatMemory
         $historyPayload = [];
         $tempQuestion = null;
-        for ($i = 0; $i < $lastIndex; $i++) {
+        $msgCount = count($this->messages) - 1; // Exclude the user question just added
+        for ($i = 0; $i < $msgCount; $i++) {
             $msg = $this->messages[$i];
             if ($msg['role'] === 'user') {
                 $tempQuestion = $msg['content'];
@@ -126,58 +113,90 @@ new class extends Component {
             }
         }
 
-        // Limit history payload according to max_chat_memory setting
         if ($this->maxChatMemory <= 0) {
             $historyPayload = [];
         } elseif (count($historyPayload) > $this->maxChatMemory) {
             $historyPayload = array_slice($historyPayload, -$this->maxChatMemory);
         }
 
-        // Kirim HTTP request ke FastAPI AI Service (/service/chat)
-        $aiServiceUrl = config('services.ai_service.url', 'http://127.0.0.1:8080');
-        $timeout = config('services.ai_service.timeout', 180);
-        $aiAnswerText = '';
+        // Step 3: Create pending ChatHistory record in database
+        $pendingId = (string) Str::uuid();
+        $chatHistory = ChatHistory::create([
+            'user_id' => auth()->id(),
+            'guest_id' => $this->guestId,
+            'question' => $cleanInput,
+            'answer' => null,
+            'status' => 'pending',
+            'pending_id' => $pendingId,
+        ]);
 
-        try {
-            $response = Http::timeout($timeout)->post("{$aiServiceUrl}/service/chat", [
-                'newMessage' => $userQuestion,
-                'history' => $historyPayload,
-            ]);
+        // Step 4: Dispatch queue job
+        ProcessAiChatResponse::dispatch($chatHistory->id, $cleanInput, $historyPayload);
 
-            if ($response->successful() && $response->json('success')) {
-                $aiAnswerText = $response->json('response');
-            } else {
-                $errorDetail = $response->json('detail') ?? $response->json('message') ?? 'Terjadi kesalahan pada layanan AI.';
-                $aiAnswerText = "Maaf, sistem AI sedang mengalami kendala ({$errorDetail}). Silakan coba beberapa saat lagi atau hubungi panitia PMB melalui tombol WhatsApp di bawah.";
-            }
-        } catch (\Throwable $e) {
-            $aiAnswerText = "Maaf, server AI saat ini sedang tidak dapat dijangkau. Silakan pastikan layanan AI aktif atau hubungi panitia PMB melalui tombol WhatsApp di bawah.";
-        }
+        $this->message = '';
+        $this->isProcessing = true;
+        $this->pendingHistoryId = $chatHistory->id;
+        $this->pollAttempts = 0;
 
-        $this->messages[] = [
-            'role' => 'ai',
-            'content' => $aiAnswerText,
-            'time' => now()->format('H:i'),
-        ];
-
-        // Save to PostgreSQL chat_histories table
-        try {
-            ChatHistory::create([
-                'user_id' => auth()->id(),
-                'guest_id' => $this->guestId,
-                'question' => $userQuestion,
-                'answer' => $aiAnswerText,
-            ]);
-        } catch (\Throwable $e) {
-            // Ignore DB log error if unreachable
+        if (!auth()->check()) {
+            $this->guestMessageCount++;
         }
 
         $this->dispatch('scroll-bottom');
     }
+
+    public function checkPendingResponse(): void
+    {
+        if (! $this->isProcessing || ! $this->pendingHistoryId) {
+            $this->isProcessing = false;
+            return;
+        }
+
+        $this->pollAttempts++;
+        $timeout = (int) config('services.ai_service.timeout', 180);
+        $maxPollAttempts = (int) ceil($timeout / 2) + 5;
+
+        $chatHistory = ChatHistory::find($this->pendingHistoryId);
+
+        if (! $chatHistory) {
+            $this->isProcessing = false;
+            $this->pendingHistoryId = null;
+            return;
+        }
+
+        if ($chatHistory->status === 'completed' || $chatHistory->status === 'failed') {
+            $this->messages[] = [
+                'role' => 'ai',
+                'content' => $chatHistory->answer ?? 'Maaf, terjadi kesalahan.',
+                'time' => $chatHistory->created_at ? $chatHistory->created_at->format('H:i') : now()->format('H:i'),
+            ];
+            $this->isProcessing = false;
+            $this->pendingHistoryId = null;
+            $this->dispatch('scroll-bottom');
+            return;
+        }
+
+        if ($this->pollAttempts >= $maxPollAttempts) {
+            $fallbackMessage = 'Maaf, pemrosesan pesan mengalami waktu tunggu habis (timeout). Silakan coba beberapa saat lagi atau hubungi panitia PMB melalui tombol WhatsApp di bawah.';
+            $chatHistory->update([
+                'status' => 'failed',
+                'answer' => $fallbackMessage,
+            ]);
+            $this->messages[] = [
+                'role' => 'ai',
+                'content' => $fallbackMessage,
+                'time' => now()->format('H:i'),
+            ];
+            $this->isProcessing = false;
+            $this->pendingHistoryId = null;
+            $this->dispatch('scroll-bottom');
+        }
+    }
 };
 ?>
 
-<div class="flex flex-col h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 w-full border-l border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden"
+<div @if($isProcessing) wire:poll.2s="checkPendingResponse" @endif
+    class="flex flex-col h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 w-full border-l border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden"
     x-data="{ 
         scrollToBottom() { 
             const container = this.$refs.chatContainer;
@@ -242,14 +261,16 @@ Ada yang bisa saya bantu?</div>
             @endif
         @endforeach
 
-        <!-- Typing Indicator (Native Livewire Loading) -->
-        <div wire:loading wire:target="fetchAiResponse" class="flex flex-col items-start max-w-[85%]">
-            <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-sm border border-zinc-200 dark:border-zinc-700 shadow-sm flex items-center gap-1.5 min-h-[38px]">
-                <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce"></span>
-                <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce [animation-delay:0.4s]"></span>
+        <!-- Typing Indicator (Active while processing queue response) -->
+        @if($isProcessing)
+            <div class="flex flex-col items-start max-w-[85%]">
+                <div class="bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-sm border border-zinc-200 dark:border-zinc-700 shadow-sm flex items-center gap-1.5 min-h-[38px]">
+                    <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce"></span>
+                    <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                    <span class="w-2 h-2 bg-[#1B287D] rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                </div>
             </div>
-        </div>
+        @endif
     </div>
 
     <!-- Input Area -->
@@ -263,9 +284,9 @@ Ada yang bisa saya bantu?</div>
 
         <form wire:submit.prevent="sendMessage" @submit="$nextTick(() => scrollToBottom())" class="flex items-center gap-2">
             <div class="relative flex-1">
-                <flux:input wire:model="message" maxlength="{{ $maxCharacter }}" wire:keydown.enter.prevent="sendMessage" wire:loading.attr="disabled" wire:target="sendMessage, fetchAiResponse" :disabled="$this->isGuestLimitReached()" placeholder="{{ $this->isGuestLimitReached() ? 'Batas pesan tamu tercapai. Silakan tunggu beberapa saat.' : 'Tulis pesan Anda di sini (maks ' . $maxCharacter . ' karakter)...' }}"
+                <flux:input wire:model="message" maxlength="{{ $maxCharacter }}" wire:keydown.enter.prevent="sendMessage" wire:loading.attr="disabled" wire:target="sendMessage" :disabled="$this->isGuestLimitReached() || $isProcessing" placeholder="{{ $this->isGuestLimitReached() ? 'Batas pesan tamu tercapai. Silakan tunggu beberapa saat.' : ($isProcessing ? 'AI sedang memproses pesan Anda...' : 'Tulis pesan Anda di sini (maks ' . $maxCharacter . ' karakter)...') }}"
                     class="pr-10 bg-[#F5F5F5] border-zinc-200 focus:border-[#1B287D] dark:bg-zinc-800 dark:border-zinc-700 w-full rounded-lg disabled:opacity-60 disabled:cursor-not-allowed text-sm" />
-                <button type="submit" wire:loading.attr="disabled" wire:target="sendMessage, fetchAiResponse" @disabled($this->isGuestLimitReached())
+                <button type="submit" wire:loading.attr="disabled" wire:target="sendMessage" @disabled($this->isGuestLimitReached() || $isProcessing)
                     class="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-[#1B287D] dark:hover:text-[#F9CE04] transition-colors p-1 disabled:opacity-40 disabled:cursor-not-allowed"
                     aria-label="Kirim pesan">
                     <flux:icon name="paper-airplane" class="w-5 h-5" />

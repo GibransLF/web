@@ -31,17 +31,21 @@ Aturan:
 ])
 
 def condense_pmb_question(newMessage: str, history: List[ChatHistoryItem], llm: ChatOpenRouter) -> str:
-    history_str = ""
-    for item in history:
-        history_str += f"Calon Mahasiswa: {item.question}\nAsisten PMB: {item.answer}\n"
+    try:
+        history_str = ""
+        for item in history:
+            history_str += f"Calon Mahasiswa: {item.question}\nAsisten PMB: {item.answer}\n"
+            
+        formatted_messages = condense_prompt_template.format_messages(
+            history=history_str,
+            newMessage=newMessage
+        )
         
-    formatted_messages = condense_prompt_template.format_messages(
-        history=history_str,
-        newMessage=newMessage
-    )
-    
-    response = llm.invoke(formatted_messages)
-    return response.content.strip()
+        response = llm.invoke(formatted_messages)
+        return response.content.strip()
+    except Exception as e:
+        print(f"[WARNING] Kondensasi riwayat pertanyaan gagal: {str(e)[:100]}. Menggunakan pertanyaan awal.")
+        return newMessage
 
 def maximal_marginal_relevance(query_embedding: list[float], candidate_embeddings: list[np.ndarray], k: int = 5, lambda_mult: float = 0.5) -> list[int]:
     """
@@ -109,24 +113,31 @@ def chat_rag(newMessage: str, history: List[ChatHistoryItem] = None, k: Optional
 Pertanyaan Calon Mahasiswa: {search_query}""")
         ])
 
-        # 1. Inisialisasi Model LLM (OpenRouter) & Embeddings PMB (Ollama)
-        t0 = time.time()
-        print("[Step 1] Inisialisasi OpenRouter LLM & Embeddings...")
+        # 1. Inisialisasi Embedding Provider (Mode 1: Ollama Lokal | Mode 2: OpenRouter Cloud)
+        # ------------------------------------------------------------------------------
+        # MODE 1 (AKTIF DEFAULT): Ollama Embeddings Lokal
+        from langchain_ollama import OllamaEmbeddings
         embeddings = OllamaEmbeddings(
             base_url=settings.OLLAMA_BASE_URL,
             model=settings.OLLAMA_EMBEDDING_MODEL
         )
-        
-        if not settings.OPENROUTER_API_KEY:
-            print(" -> WARNING: OPENROUTER_API_KEY belum diisi di .env!")
 
+        # MODE 2 (OPSIONAL): OpenRouter Cloud Embeddings
+        # from langchain_openrouter import OpenRouterEmbeddings
+        # embeddings = OpenRouterEmbeddings(
+        #     api_key=settings.OPENROUTER_API_KEY,
+        #     model=settings.OPENROUTER_EMBEDDING_MODEL
+        # )
+        # ------------------------------------------------------------------------------
+
+        # Inisialisasi LLM Utama (OPENROUTER_MODEL)
+        primary_model_name = settings.OPENROUTER_MODEL
+        print(f"[Step 1] Inisialisasi OpenRouter LLM (Model Utama: {primary_model_name})...")
         llm = ChatOpenRouter(
             api_key=settings.OPENROUTER_API_KEY,
-            model=settings.OPENROUTER_MODEL,
+            model=primary_model_name,
             temperature=temperature
         )
-        t1 = time.time()
-        print(f" -> Selesai dalam: {t1 - t0:.4f} detik (Model OpenRouter: {settings.OPENROUTER_MODEL})")
         
         # 2. Kondensasi pertanyaan jika ada history percakapan
         if history:
@@ -154,9 +165,8 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         # Filtering Cosine Distance dilakukan langsung di level database SQL
         cur.execute(
             """
-            SELECT kc.chunk_text, kb.metadata_name, kc.embedding, (kc.embedding <=> %s::vector) AS distance
+            SELECT kc.chunk_text, kc.embedding, (kc.embedding <=> %s::vector) AS distance
             FROM knowledge_chunks kc
-            JOIN knowledge_bases kb ON kc.knowledge_base_id = kb.id
             WHERE (kc.embedding <=> %s::vector) <= %s
             ORDER BY kc.embedding <=> %s::vector
             LIMIT %s
@@ -168,11 +178,10 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         conn.close()
 
         candidates = []
-        for chunk_text, meta_name, emb_val, dist in rows:
+        for chunk_text, emb_val, dist in rows:
             emb_array = emb_val.to_numpy() if hasattr(emb_val, 'to_numpy') else np.array(emb_val)
             candidates.append({
                 "page_content": chunk_text,
-                "source": meta_name,
                 "embedding": emb_array,
                 "distance": dist
             })
@@ -212,16 +221,47 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         t5 = time.time()
         print(f" -> Selesai dalam: {t5 - t4:.4f} detik")
         
-        # 5. Panggil LLM PMB dengan pesan terformat
+        # 5. Panggil LLM PMB dengan Try-Catch 2-Tier Fallback (Model Utama -> Second Model)
         t6 = time.time()
-        print("[Step 4] Memanggil LLM PMB untuk mendapatkan jawaban...")
-        response = llm.invoke(formatted_messages)
+        print(f"[Step 4] Memanggil LLM PMB ('{primary_model_name}') untuk mendapatkan jawaban...")
+        
+        response_content = None
+        
+        # Attempt 1: Model Utama (OPENROUTER_MODEL)
+        try:
+            response = llm.invoke(formatted_messages)
+            response_content = response.content
+        except Exception as err_primary:
+            err_msg = str(err_primary)
+            print(f"[WARNING] Model utama '{primary_model_name}' mengalami kendala: {err_msg[:120]}")
+            
+            # Attempt 2: Second Model Fallback (OPENROUTER_SECOND_MODEL)
+            second_model_name = getattr(settings, "OPENROUTER_SECOND_MODEL", "").strip()
+            if second_model_name:
+                try:
+                    print(f"[FALLBACK] Mengalihkan ke model cadangan (second model): '{second_model_name}'...")
+                    secondary_llm = ChatOpenRouter(
+                        api_key=settings.OPENROUTER_API_KEY,
+                        model=second_model_name,
+                        temperature=temperature
+                    )
+                    response = secondary_llm.invoke(formatted_messages)
+                    response_content = response.content
+                except Exception as err_secondary:
+                    print(f"[WARNING] Model cadangan '{second_model_name}' juga mengalami kendala: {str(err_secondary)[:120]}")
+
+        # Jika seluruh model gagal / rate-limited, kembalikan jawaban ramah publik di chat-widget
+        if not response_content:
+            print("[INFO] Mengembalikan respon ramah publik karena AI service sedang mengalami antrean/gangguan.")
+            response_content = "Maaf, layanan AI Assistant PMB sedang mengalami antrean tinggi / gangguan sementara. Silakan coba beberapa saat lagi atau hubungi panitia PMB STMIK Bandung."
+
         t7 = time.time()
         print(f" -> Selesai dalam: {t7 - t6:.4f} detik")
         
         total_time = t7 - start_time
         print(f"--- [END] Total Waktu Proses RAG pgvector: {total_time:.4f} detik ---\n")
-        return response.content, search_query
+        return response_content, search_query
     except Exception as e:
-        print(f" -> ERROR: Terjadi kesalahan pada RAG pgvector: {str(e)}")
-        raise Exception(f"Terjadi kesalahan pada RAG pgvector: {str(e)}")
+        print(f"[ERROR] Kendala pada alur RAG: {str(e)[:150]}")
+        fallback_msg = "Maaf, layanan AI Assistant PMB sedang mengalami antrean tinggi / gangguan sementara. Silakan coba beberapa saat lagi atau hubungi panitia PMB STMIK Bandung."
+        return fallback_msg, newMessage

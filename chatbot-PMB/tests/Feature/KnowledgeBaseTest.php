@@ -52,9 +52,9 @@ test('valid docx document is renamed based on file_name and saved to private sto
         ->call('uploadDocument')
         ->assertHasNoErrors();
 
-    $doc = KnowledgeBase::where('metadata_name', 'panduan_pmb_2026.docx')->first();
+    $doc = KnowledgeBase::where('path', 'knowledge_bases/panduan_pmb_2026.docx')->first();
     expect($doc)->not->toBeNull()
-        ->and($doc->metadata_name)->toBe('panduan_pmb_2026.docx')
+        ->and($doc->path)->toBe('knowledge_bases/panduan_pmb_2026.docx')
         ->and($doc->filename)->toBe('knowledge_bases/panduan_pmb_2026.docx')
         ->and($doc->status)->toBe('success')
         ->and($doc->user_id)->toBe($user->id)
@@ -63,6 +63,27 @@ test('valid docx document is renamed based on file_name and saved to private sto
 
     Storage::disk('local')->assertExists('knowledge_bases/panduan_pmb_2026.docx');
     Http::assertSent(fn ($request) => str_contains($request->url(), '/service/createnewknowledge'));
+});
+
+test('spaces in file_name input are converted to underscores when saved', function () {
+    Storage::fake('local');
+    Http::fake([
+        '*' => Http::response(['success' => true, 'chunks' => 5], 200),
+    ]);
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $file = UploadedFile::fake()->create('random_input_name.docx', 1024, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+    Livewire::test('pages::admin.knowledge-base')
+        ->set('file_name', 'panduan pmb 2026 stmik')
+        ->set('file', $file)
+        ->call('uploadDocument')
+        ->assertHasNoErrors();
+
+    $doc = KnowledgeBase::where('path', 'knowledge_bases/panduan_pmb_2026_stmik.docx')->first();
+    expect($doc)->not->toBeNull()
+        ->and($doc->path)->toBe('knowledge_bases/panduan_pmb_2026_stmik.docx');
 });
 
 test('failed vectorization sets document status to failed', function () {
@@ -81,7 +102,7 @@ test('failed vectorization sets document status to failed', function () {
         ->call('uploadDocument')
         ->assertHasNoErrors();
 
-    $doc = KnowledgeBase::where('metadata_name', 'gagal_doc.docx')->first();
+    $doc = KnowledgeBase::where('path', 'knowledge_bases/gagal_doc.docx')->first();
     expect($doc)->not->toBeNull()
         ->and($doc->status)->toBe('failed');
 });
@@ -99,7 +120,7 @@ test('reindexDocument updates status to success when ai service responds', funct
 
     $doc = KnowledgeBase::create([
         'filename' => $storedPath,
-        'metadata_name' => 'retry.docx',
+        'path' => 'knowledge_bases/retry.docx',
         'status' => 'failed',
     ]);
 
@@ -149,7 +170,7 @@ test('duplicate metadata_name is rejected', function () {
 
     KnowledgeBase::create([
         'filename' => 'knowledge_bases/existing.docx',
-        'metadata_name' => 'duplicate_name.docx',
+        'path' => 'knowledge_bases/duplicate_name.docx',
         'status' => 'success',
     ]);
 
@@ -173,7 +194,7 @@ test('authenticated user can download private document', function () {
 
     $doc = KnowledgeBase::create([
         'filename' => $storedPath,
-        'metadata_name' => 'biaya.docx',
+        'path' => 'knowledge_bases/biaya.docx',
         'status' => 'success',
     ]);
 
@@ -193,7 +214,7 @@ test('authenticated user can delete document and remove from private storage', f
 
     $doc = KnowledgeBase::create([
         'filename' => $storedPath,
-        'metadata_name' => 'syarat.docx',
+        'path' => 'knowledge_bases/syarat.docx',
         'status' => 'success',
     ]);
 

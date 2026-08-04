@@ -19,6 +19,7 @@ return new class extends Migration
             $table->foreignId('knowledge_base_id')->constrained('knowledge_bases')->onDelete('cascade');
             $table->text('chunk_text');
             $table->json('embedding')->nullable();
+            $table->json('metadata')->nullable();
             $table->timestamp('created_at')->useCurrent();
         });
 

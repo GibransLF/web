@@ -150,9 +150,8 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         # Filtering Cosine Distance dilakukan langsung di level database SQL
         cur.execute(
             """
-            SELECT kc.chunk_text, kb.metadata_name, kc.embedding, (kc.embedding <=> %s::vector) AS distance
+            SELECT kc.chunk_text, kc.embedding, (kc.embedding <=> %s::vector) AS distance
             FROM knowledge_chunks kc
-            JOIN knowledge_bases kb ON kc.knowledge_base_id = kb.id
             WHERE (kc.embedding <=> %s::vector) <= %s
             ORDER BY kc.embedding <=> %s::vector
             LIMIT %s
@@ -164,11 +163,10 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         conn.close()
 
         candidates = []
-        for chunk_text, meta_name, emb_val, dist in rows:
+        for chunk_text, emb_val, dist in rows:
             emb_array = emb_val.to_numpy() if hasattr(emb_val, 'to_numpy') else np.array(emb_val)
             candidates.append({
                 "page_content": chunk_text,
-                "source": meta_name,
                 "embedding": emb_array,
                 "distance": dist
             })

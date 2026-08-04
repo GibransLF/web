@@ -5,8 +5,8 @@ use Livewire\Attributes\Title;
 use App\Models\ChatbotSetting;
 
 new #[Title('Chatbot Settings')] class extends Component {
-    public int $max_input_character = 500;
-    public int $max_chat_memory = 1;
+    public int $max_input_character = 50;
+    public int $max_chat_memory = 0;
     public int $max_guest_chat = 4;
     public int $top_k = 5;
     public int $fetch_k = 15;
@@ -204,7 +204,6 @@ new #[Title('Chatbot Settings')] class extends Component {
             title="Model LLM & System Prompt AI"
             description="Instruksi perilaku AI Assistant PMB STMIK Bandung dan parameter kreativitas respons."
             icon="sparkles"
-            badge="Qwen3 8B (OpenRouter)"
         >
             <div class="space-y-4 sm:space-y-6">
                 <!-- Temperature Range Slider with Alpine.js entangle for zero-lag drag -->

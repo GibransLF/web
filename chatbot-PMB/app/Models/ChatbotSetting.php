@@ -22,8 +22,8 @@ class ChatbotSetting extends Model
     public static function getDefaults(): array
     {
         return [
-            'max_input_character' => 500,
-            'max_chat_memory' => 1,
+            'max_input_character' => 50,
+            'max_chat_memory' => 0,
             'max_guest_chat' => 4,
             'top_k' => 5,
             'fetch_k' => 15,

@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
     OPENROUTER_MODEL: str = ""
+    OPENROUTER_SECOND_MODEL: str = ""
+    OPENROUTER_EMBEDDING_MODEL: str = ""
     
     POSTGRES_HOST: str = "127.0.0.1"
     POSTGRES_PORT: int = 5432

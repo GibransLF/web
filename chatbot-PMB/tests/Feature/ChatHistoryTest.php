@@ -1,8 +1,11 @@
 <?php
 
+use App\Jobs\ProcessAiChatResponse;
 use App\Models\ChatbotSetting;
 use App\Models\ChatHistory;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
 test('guests are redirected from chat history page', function () {
@@ -18,32 +21,83 @@ test('authenticated users can render admin chat history page', function () {
     $response->assertOk();
 });
 
-test('chatbot saves user_id when authenticated user sends message', function () {
+test('chatbot saves pending record and dispatches queue job when user sends message', function () {
+    Queue::fake();
+
     $user = User::factory()->create(['name' => 'Admin PMB']);
     $this->actingAs($user);
 
     Livewire::test('chat-widget')
         ->set('message', 'Berapa biaya pendaftaran PMB?')
-        ->call('sendMessage')
-        ->call('fetchAiResponse');
+        ->call('sendMessage');
 
     $history = ChatHistory::first();
     expect($history)->not->toBeNull()
         ->and($history->user_id)->toBe($user->id)
-        ->and($history->question)->toBe('Berapa biaya pendaftaran PMB?');
+        ->and($history->question)->toBe('Berapa biaya pendaftaran PMB?')
+        ->and($history->status)->toBe('pending');
+
+    Queue::assertPushed(ProcessAiChatResponse::class, function ($job) use ($history) {
+        return $job->chatHistoryId === $history->id;
+    });
 });
 
-test('chatbot saves user_id as null when unauthenticated guest sends message', function () {
+test('chatbot saves guest message as pending and dispatches queue job', function () {
+    Queue::fake();
+
     Livewire::test('chat-widget')
         ->set('message', 'Persyaratan pendaftaran?')
-        ->call('sendMessage')
-        ->call('fetchAiResponse');
+        ->call('sendMessage');
 
     $history = ChatHistory::first();
     expect($history)->not->toBeNull()
         ->and($history->user_id)->toBeNull()
         ->and($history->guest_id)->not->toBeNull()
-        ->and($history->question)->toBe('Persyaratan pendaftaran?');
+        ->and($history->question)->toBe('Persyaratan pendaftaran?')
+        ->and($history->status)->toBe('pending');
+
+    Queue::assertPushed(ProcessAiChatResponse::class);
+});
+
+test('job handles ai response successfully', function () {
+    Http::fake([
+        '*/service/chat' => Http::response([
+            'success' => true,
+            'response' => 'Biaya pendaftaran adalah Rp 250.000',
+        ], 200),
+    ]);
+
+    $history = ChatHistory::create([
+        'user_id' => null,
+        'guest_id' => 'guest_test',
+        'question' => 'Berapa biaya pendaftaran?',
+        'answer' => null,
+        'status' => 'pending',
+    ]);
+
+    $job = new ProcessAiChatResponse($history->id, 'Berapa biaya pendaftaran?');
+    $job->handle();
+
+    $history->refresh();
+    expect($history->status)->toBe('completed')
+        ->and($history->answer)->toBe('Biaya pendaftaran adalah Rp 250.000');
+});
+
+test('polling retrieves completed ai response', function () {
+    $history = ChatHistory::create([
+        'user_id' => null,
+        'guest_id' => 'guest_test',
+        'question' => 'Syarat pendaftaran?',
+        'answer' => 'Syaratnya adalah FC Ijazah',
+        'status' => 'completed',
+    ]);
+
+    Livewire::test('chat-widget')
+        ->set('isProcessing', true)
+        ->set('pendingHistoryId', $history->id)
+        ->call('checkPendingResponse')
+        ->assertSet('isProcessing', false)
+        ->assertSee('Syaratnya adalah FC Ijazah');
 });
 
 test('chat history displays user name for user_id and guest for guest_id', function () {
@@ -141,11 +195,11 @@ test('message input collapses multiple spaces via regex', function () {
 });
 
 test('history payload sent to AI service is limited by max_chat_memory setting', function () {
-    ChatbotSetting::query()->update(['max_chat_memory' => 1]);
+    ChatbotSetting::current()->update(['max_chat_memory' => 1]);
     $component = Livewire::test('chat-widget');
     expect($component->get('maxChatMemory'))->toBe(1);
 
-    ChatbotSetting::query()->update(['max_chat_memory' => 0]);
+    ChatbotSetting::current()->update(['max_chat_memory' => 0]);
     $componentZero = Livewire::test('chat-widget');
     expect($componentZero->get('maxChatMemory'))->toBe(0);
 });

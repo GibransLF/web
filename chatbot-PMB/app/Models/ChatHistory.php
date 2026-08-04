@@ -17,6 +17,8 @@ class ChatHistory extends Model
         'guest_id',
         'question',
         'answer',
+        'status',
+        'pending_id',
     ];
 
     public function user(): BelongsTo
