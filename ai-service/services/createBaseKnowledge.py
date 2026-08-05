@@ -101,19 +101,23 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
 
         # 5. Inisialisasi Embedding Provider (Mode 1: Ollama Lokal | Mode 2: OpenRouter Cloud)
         # ------------------------------------------------------------------------------
-        # MODE 1 (AKTIF DEFAULT): Ollama Embeddings Lokal
-        from langchain_ollama import OllamaEmbeddings
-        embeddings = OllamaEmbeddings(
-            base_url=settings.OLLAMA_BASE_URL,
-            model=settings.OLLAMA_EMBEDDING_MODEL
-        )
-
-        # MODE 2 (OPSIONAL): OpenRouter Cloud Embeddings
-        # from langchain_openrouter import OpenRouterEmbeddings
-        # embeddings = OpenRouterEmbeddings(
-        #     api_key=settings.OPENROUTER_API_KEY,
-        #     model=settings.OPENROUTER_EMBEDDING_MODEL
+        # MODE 1 (NONAKTIF): Ollama Embeddings Lokal
+        # from langchain_ollama import OllamaEmbeddings
+        # embeddings = OllamaEmbeddings(
+        #     base_url=settings.OLLAMA_BASE_URL,
+        #     model=settings.OLLAMA_EMBEDDING_MODEL
         # )
+
+        # MODE 2 (AKTIF): OpenRouter Cloud Embeddings (via langchain_openai OpenAIEmbeddings)
+        from langchain_openai import OpenAIEmbeddings
+        embeddings = OpenAIEmbeddings(
+            openai_api_key=settings.OPENROUTER_API_KEY,
+            openai_api_base=settings.OPENROUTER_BASE_URL,
+            model=settings.OPENROUTER_EMBEDDING_MODEL,
+            dimensions=1024,
+            check_embedding_ctx_length=False,
+            tiktoken_enabled=False
+        )
         # ------------------------------------------------------------------------------
 
         # 6. Koneksi ke PostgreSQL database pmb-rag via helper terpusat

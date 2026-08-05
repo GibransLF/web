@@ -8,7 +8,7 @@ new #[Title('Chatbot Settings')] class extends Component {
     public int $max_input_character = 50;
     public int $max_chat_memory = 0;
     public int $max_guest_chat = 4;
-    public int $top_k = 8;
+    public int $top_k = 5;
     public int $fetch_k = 15;
     public float $temperature = 0.2;
     public string $system_prompt = '';
@@ -183,7 +183,7 @@ new #[Title('Chatbot Settings')] class extends Component {
                     name="top_k"
                     label="Nilai Top-K (Final Context Chunks)"
                     description="Jumlah potongan dokumen paling relevan yang dimasukkan ke konteks prompt LLM."
-                    badge="Default: 8"
+                    badge="Default: 5"
                 >
                     <flux:input type="number" min="1" max="20" wire:model="top_k" icon="document-magnifying-glass" />
                 </x-settings-field>

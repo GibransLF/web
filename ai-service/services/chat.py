@@ -1,4 +1,5 @@
 import time
+import json
 import numpy as np
 from typing import List, Optional
 from langchain_ollama import OllamaEmbeddings, ChatOllama
@@ -28,6 +29,10 @@ Aturan:
     ),
     ("human", "Riwayat:\n{history}\n\nPertanyaan:\n{newMessage}")
 ])
+
+def format_query_for_embedding(query: str) -> str:
+    task = "Diberikan pertanyaan calon mahasiswa terkait PMB, temukan potongan dokumen yang paling relevan untuk menjawab pertanyaan tersebut"
+    return f"Instruct: {task}\nQuery: {query}"
 
 def condense_pmb_question(newMessage: str, history: List[ChatHistoryItem], llm: ChatOllama) -> str:
     history_str = ""
@@ -138,9 +143,11 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         # 3. Ambil Dokumen PMB dari PostgreSQL (knowledge_chunks) menggunakan pgvector Adapter + HNSW Index
         t2 = time.time()
         calc_fetch_k = max(actual_fetch_k, actual_k)
-        print(f"[Step 2] Mencari dokumen di PostgreSQL (pgvector adapter + HNSW, k={actual_k}, fetch_k={calc_fetch_k}, threshold={DISTANCE_THRESHOLD}) untuk: '{search_query}'...")
+        embed_model_name = settings.OLLAMA_EMBEDDING_MODEL
+        print(f"[Step 2] Mencari dokumen di PostgreSQL (pgvector, embedding model: '{embed_model_name}', k={actual_k}, fetch_k={calc_fetch_k}, threshold={DISTANCE_THRESHOLD}) untuk: '{search_query}'...")
 
-        raw_vector = embeddings.embed_query(search_query)
+        formatted_query = format_query_for_embedding(search_query)
+        raw_vector = embeddings.embed_query(formatted_query)
         query_vector = np.array(raw_vector)
 
         # Gunakan helper db terpusat dengan register_pgvector=True
@@ -150,7 +157,7 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         # Filtering Cosine Distance dilakukan langsung di level database SQL
         cur.execute(
             """
-            SELECT kc.chunk_text, kc.embedding, (kc.embedding <=> %s::vector) AS distance
+            SELECT kc.chunk_text, kc.embedding, (kc.embedding <=> %s::vector) AS distance, kc.metadata
             FROM knowledge_chunks kc
             WHERE (kc.embedding <=> %s::vector) <= %s
             ORDER BY kc.embedding <=> %s::vector
@@ -163,12 +170,14 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         conn.close()
 
         candidates = []
-        for chunk_text, emb_val, dist in rows:
+        for chunk_text, emb_val, dist, metadata in rows:
             emb_array = emb_val.to_numpy() if hasattr(emb_val, 'to_numpy') else np.array(emb_val)
+            meta = metadata if isinstance(metadata, dict) else (json.loads(metadata) if metadata else {})
             candidates.append({
                 "page_content": chunk_text,
                 "embedding": emb_array,
-                "distance": dist
+                "distance": dist,
+                "source": meta.get("source", "N/A")
             })
 
         # Re-rank menggunakan MMR jika kandidat > actual_k
@@ -179,11 +188,11 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         else:
             docs = candidates
 
-        print(f"\n=================== [HASIL RETRIEVAL POSTGRESQL PGVECTOR (k={len(docs)}, fetch_k={len(candidates)})] ===================")
+        print(f"\n=================== [HASIL RETRIEVAL POSTGRESQL PGVECTOR (Embedding Model: {embed_model_name}, k={len(docs)}, fetch_k={len(candidates)})] ===================")
         for i, doc in enumerate(docs, 1):
             source_info = doc.get("source", "N/A")
             dist_info = doc.get("distance", 0.0)
-            print(f"Doc #{i} | Source: {source_info} | Cosine Distance: {dist_info:.4f}")
+            print(f"Doc #{i} | Source File: {source_info} | Cosine Distance: {dist_info:.4f}")
             print(f"Teks Content:\n{doc['page_content']}")
             print("-" * 70)
         print("=========================================================================\n")

@@ -1,4 +1,5 @@
 import time
+import json
 import numpy as np
 from typing import List, Optional
 from langchain_ollama import OllamaEmbeddings
@@ -29,6 +30,10 @@ Aturan:
     ),
     ("human", "Riwayat:\n{history}\n\nPertanyaan:\n{newMessage}")
 ])
+
+def format_query_for_embedding(query: str) -> str:
+    task = "Diberikan pertanyaan calon mahasiswa terkait Penerimaan Mahasiswa Baru (PMB), temukan potongan dokumen yang paling relevan untuk menjawab pertanyaan"
+    return f"Instruct: {task}\nQuery: {query}"
 
 def condense_pmb_question(newMessage: str, history: List[ChatHistoryItem], llm: ChatOpenRouter) -> str:
     try:
@@ -116,18 +121,22 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         # 1. Inisialisasi Embedding Provider (Mode 1: Ollama Lokal | Mode 2: OpenRouter Cloud)
         # ------------------------------------------------------------------------------
         # MODE 1 (AKTIF DEFAULT): Ollama Embeddings Lokal
-        from langchain_ollama import OllamaEmbeddings
-        embeddings = OllamaEmbeddings(
-            base_url=settings.OLLAMA_BASE_URL,
-            model=settings.OLLAMA_EMBEDDING_MODEL
-        )
-
-        # MODE 2 (OPSIONAL): OpenRouter Cloud Embeddings
-        # from langchain_openrouter import OpenRouterEmbeddings
-        # embeddings = OpenRouterEmbeddings(
-        #     api_key=settings.OPENROUTER_API_KEY,
-        #     model=settings.OPENROUTER_EMBEDDING_MODEL
+        # from langchain_ollama import OllamaEmbeddings
+        # embeddings = OllamaEmbeddings(
+        #     base_url=settings.OLLAMA_BASE_URL,
+        #     model=settings.OLLAMA_EMBEDDING_MODEL
         # )
+
+        # MODE 2 (OPSIONAL): OpenRouter Cloud Embeddings (via langchain_openai OpenAIEmbeddings)
+        from langchain_openai import OpenAIEmbeddings
+        embeddings = OpenAIEmbeddings(
+            openai_api_key=settings.OPENROUTER_API_KEY,
+            openai_api_base=settings.OPENROUTER_BASE_URL,
+            model=settings.OPENROUTER_EMBEDDING_MODEL,
+            dimensions=1024,
+            check_embedding_ctx_length=False,
+            tiktoken_enabled=False
+        )
         # ------------------------------------------------------------------------------
 
         # Inisialisasi LLM Utama (OPENROUTER_MODEL)
@@ -153,9 +162,11 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         # 3. Ambil Dokumen PMB dari PostgreSQL (knowledge_chunks) menggunakan pgvector Adapter + HNSW Index
         t2 = time.time()
         calc_fetch_k = max(actual_fetch_k, actual_k)
-        print(f"[Step 2] Mencari dokumen di PostgreSQL (pgvector adapter + HNSW, k={actual_k}, fetch_k={calc_fetch_k}, threshold={DISTANCE_THRESHOLD}) untuk: '{search_query}'...")
+        embed_model_name = settings.OPENROUTER_EMBEDDING_MODEL
+        print(f"[Step 2] Mencari dokumen di PostgreSQL (pgvector, embedding model: '{embed_model_name}', k={actual_k}, fetch_k={calc_fetch_k}, threshold={DISTANCE_THRESHOLD}) untuk: '{search_query}'...")
 
-        raw_vector = embeddings.embed_query(search_query)
+        formatted_query = format_query_for_embedding(search_query)
+        raw_vector = embeddings.embed_query(formatted_query)
         query_vector = np.array(raw_vector)
 
         # Gunakan helper db terpusat dengan register_pgvector=True
@@ -165,7 +176,7 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         # Filtering Cosine Distance dilakukan langsung di level database SQL
         cur.execute(
             """
-            SELECT kc.chunk_text, kc.embedding, (kc.embedding <=> %s::vector) AS distance
+            SELECT kc.chunk_text, kc.embedding, (kc.embedding <=> %s::vector) AS distance, kc.metadata
             FROM knowledge_chunks kc
             WHERE (kc.embedding <=> %s::vector) <= %s
             ORDER BY kc.embedding <=> %s::vector
@@ -178,12 +189,14 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         conn.close()
 
         candidates = []
-        for chunk_text, emb_val, dist in rows:
+        for chunk_text, emb_val, dist, metadata in rows:
             emb_array = emb_val.to_numpy() if hasattr(emb_val, 'to_numpy') else np.array(emb_val)
+            meta = metadata if isinstance(metadata, dict) else (json.loads(metadata) if metadata else {})
             candidates.append({
                 "page_content": chunk_text,
                 "embedding": emb_array,
-                "distance": dist
+                "distance": dist,
+                "source": meta.get("source", "N/A")
             })
 
         # Re-rank menggunakan MMR jika kandidat > actual_k
@@ -194,11 +207,11 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         else:
             docs = candidates
 
-        print(f"\n=================== [HASIL RETRIEVAL POSTGRESQL PGVECTOR (k={len(docs)}, fetch_k={len(candidates)})] ===================")
+        print(f"\n=================== [HASIL RETRIEVAL POSTGRESQL PGVECTOR (Embedding Model: {embed_model_name}, k={len(docs)}, fetch_k={len(candidates)})] ===================")
         for i, doc in enumerate(docs, 1):
             source_info = doc.get("source", "N/A")
             dist_info = doc.get("distance", 0.0)
-            print(f"Doc #{i} | Source: {source_info} | Cosine Distance: {dist_info:.4f}")
+            print(f"Doc #{i} | Source File: {source_info} | Cosine Distance: {dist_info:.4f}")
             print(f"Teks Content:\n{doc['page_content']}")
             print("-" * 70)
         print("=========================================================================\n")

@@ -537,8 +537,10 @@ vectorstore = PineconeVectorStore.from_documents(
     docs, OpenAIEmbeddings(model="text-embedding-3-small", dimensions=512), index=pc.Index("idx")
 )  # Error: dimension mismatch!
 
-# CORRECT: Match dimensions
+# CORRECT: Match dimensions or set explicit output dimensions for MRL models
 embeddings = OpenAIEmbeddings()  # Default 1536
+# For OpenRouter / Matryoshka models requiring specific vector store dimensions (e.g., VECTOR(1024)):
+embeddings_1024 = OpenRouterEmbeddings(model="qwen/qwen3-embedding-8b", dimensions=1024)
 ```
 </python>
 </fix-dimension-mismatch>
