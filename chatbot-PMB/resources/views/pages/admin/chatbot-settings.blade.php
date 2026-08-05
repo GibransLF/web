@@ -69,6 +69,7 @@ new #[Title('Chatbot Settings')] class extends Component {
 
         $setting = ChatbotSetting::current();
         $setting->update([
+            'user_id' => auth()->id(),
             'max_input_character' => $this->max_input_character,
             'max_chat_memory' => $this->max_chat_memory,
             'max_guest_chat' => $this->max_guest_chat,
@@ -109,6 +110,21 @@ new #[Title('Chatbot Settings')] class extends Component {
         <div>
             <flux:heading size="xl">{{ __('Chatbot Settings') }}</flux:heading>
             <flux:subheading>{{ __('Atur parameter RAG, batas memori, dan instruksi System Prompt tanpa perlu mengubah kode program.') }}</flux:subheading>
+            @php
+                $currentSetting = \App\Models\ChatbotSetting::with('user')->first();
+            @endphp
+            @if($currentSetting && $currentSetting->updated_at)
+                <div class="flex items-center gap-2 mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-[#1B287D] dark:text-blue-300 font-bold border border-blue-100 dark:border-blue-900/60">
+                        <flux:icon icon="user" class="w-3.5 h-3.5 text-[#1B287D] dark:text-blue-400" />
+                        {{ $currentSetting->user->name ?? 'Sistem' }}
+                    </span>
+                    <span>•</span>
+                    <span class="font-medium text-zinc-600 dark:text-zinc-400 capitalize">
+                        {{ $currentSetting->updated_at->isoFormat('dddd, DD MMMM YYYY') }}
+                    </span>
+                </div>
+            @endif
         </div>
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
             <flux:modal.trigger name="confirm-reset-settings">

@@ -44,7 +44,7 @@
                     </div>
                 </div>
                 <p class="text-3xl font-extrabold text-zinc-900 dark:text-white">{{ number_format($totalChat) }}</p>
-                <p class="text-[11px] text-emerald-600 font-medium">↑ Tersimpan di PostgreSQL</p>
+                <p class="text-[11px] text-emerald-600 font-medium">↑ Tersimpan di Database</p>
             </div>
 
             <div class="p-5 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-xs space-y-2">
@@ -71,13 +71,13 @@
 
             <div class="p-5 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-xs space-y-2">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-zinc-500 uppercase">LLM Temperature</span>
+                    <span class="text-xs font-semibold text-zinc-500 uppercase">Maks Chat Tamu (Guest)</span>
                     <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                        <flux:icon icon="sparkles" class="w-5 h-5" />
+                        <flux:icon icon="user" class="w-5 h-5" />
                     </div>
                 </div>
-                <p class="text-3xl font-extrabold text-zinc-900 dark:text-white">{{ $setting->temperature }}</p>
-                <p class="text-[11px] text-emerald-600 font-medium">Respon Konsisten & Presisi</p>
+                <p class="text-3xl font-extrabold text-zinc-900 dark:text-white">{{ $setting->max_guest_chat }} <span class="text-sm font-normal text-zinc-400">pesan</span></p>
+                <p class="text-[11px] text-emerald-600 font-medium">Kuota Pesan Pengunjung Tamu</p>
             </div>
         </div>
 
@@ -185,5 +185,8 @@
                 </div>
             </div>
         </div>
+
+        <!-- Top 10 Frequent Questions Word Chart (Sastrawi) -->
+        <livewire:admin.frequent-words-chart />
     </div>
 </x-layouts::app>

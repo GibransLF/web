@@ -4,12 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ChatbotSetting extends Model
 {
     use HasFactory;
 
+    public const CREATED_AT = null;
+
     protected $fillable = [
+        'user_id',
         'max_input_character',
         'max_chat_memory',
         'max_guest_chat',
@@ -18,6 +22,11 @@ class ChatbotSetting extends Model
         'temperature',
         'system_prompt',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public static function getDefaults(): array
     {

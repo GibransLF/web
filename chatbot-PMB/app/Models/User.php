@@ -60,4 +60,14 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasMany(KnowledgeBase::class);
     }
+
+    public function customStopwords()
+    {
+        return $this->hasMany(CustomStopword::class);
+    }
+
+    public function chatbotSettings()
+    {
+        return $this->hasMany(ChatbotSetting::class);
+    }
 }
