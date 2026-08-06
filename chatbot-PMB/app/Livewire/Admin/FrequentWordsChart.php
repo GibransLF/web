@@ -23,6 +23,10 @@ class FrequentWordsChart extends Component
 
     public function addStopwords(): void
     {
+        if (! auth()->user()->isAdmin()) {
+            return;
+        }
+
         $this->validate();
 
         // Split by comma, spaces, or line breaks
@@ -57,6 +61,10 @@ class FrequentWordsChart extends Component
 
     public function deleteStopword(int $id): void
     {
+        if (! auth()->user()->isAdmin()) {
+            return;
+        }
+
         $stopword = CustomStopword::find($id);
         if ($stopword) {
             $stopword->delete();

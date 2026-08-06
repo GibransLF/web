@@ -17,6 +17,10 @@ new #[Title('Chat History')] class extends Component {
 
     public function clearAllHistory(): void
     {
+        if (! auth()->user()->isAdmin()) {
+            return;
+        }
+
         ChatHistory::truncate();
         session()->flash('success', 'Seluruh riwayat chat percakapan berhasil dibersihkan.');
     }
@@ -46,9 +50,7 @@ new #[Title('Chat History')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl space-y-6">
     <!-- Flash Alert -->
     @if (session()->has('success'))
-        <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm flex items-center justify-between">
-            <span>{{ session('success') }}</span>
-        </div>
+        <x-alert-banner type="success" :message="session('success')" />
     @endif
 
     <!-- Header & Action -->
@@ -57,7 +59,7 @@ new #[Title('Chat History')] class extends Component {
             <flux:heading size="xl">{{ __('History Chatbot') }}</flux:heading>
             <flux:subheading>{{ __('Daftar riwayat chat asisten AI.') }}</flux:subheading>
         </div>
-        @if(ChatHistory::exists())
+        @if(auth()->user()->isAdmin() && ChatHistory::exists())
             <flux:modal.trigger name="confirm-clear-history">
                 <flux:button variant="ghost" icon="trash" class="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
                     Bersihkan Riwayat
@@ -120,18 +122,20 @@ new #[Title('Chat History')] class extends Component {
         @endforelse
 
         @if($chatMessages->hasPages())
-            <div class="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                {{ $chatMessages->links() }}
+            <div class="pt-4 border-t border-zinc-200 dark:border-zinc-800 overflow-x-auto w-full">
+                <flux:pagination :paginator="$chatMessages" />
             </div>
         @endif
     </div>
 
     <!-- Danger Confirmation Modal for Clear History -->
-    <x-modal-danger
-        name="confirm-clear-history"
-        title="Kosongkan Riwayat Percakapan?"
-        description="Tindakan ini akan menghapus seluruh data riwayat percakapan chatbot secara permanen. Apakah Anda yakin ingin melanjutkan?"
-        confirmText="Ya, Hapus Semua"
-        confirmAction="clearAllHistory"
-    />
+    @if(auth()->user()->isAdmin())
+        <x-modal-danger
+            name="confirm-clear-history"
+            title="Kosongkan Riwayat Percakapan?"
+            description="Tindakan ini akan menghapus seluruh data riwayat percakapan chatbot secara permanen. Apakah Anda yakin ingin melanjutkan?"
+            confirmText="Ya, Hapus Semua"
+            confirmAction="clearAllHistory"
+        />
+    @endif
 </div>

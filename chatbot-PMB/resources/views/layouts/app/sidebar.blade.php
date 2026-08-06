@@ -6,24 +6,30 @@
     <body class="min-h-screen bg-white dark:bg-zinc-800">
         <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.header>
-                <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
-                <flux:sidebar.collapse class="lg:hidden" />
+                <x-app-logo :sidebar="true" :href="auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard')" wire:navigate />
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('PMB Management')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
+                    <flux:sidebar.item icon="home" :href="auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard')" :current="request()->routeIs('dashboard') || request()->routeIs('admin.dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="book-open" :href="route('admin.knowledge-base')" :current="request()->routeIs('admin.knowledge-base')" wire:navigate>
-                        {{ __('Knowledge Base') }}
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="cog" :href="route('admin.chatbot-setting')" :current="request()->routeIs('admin.chatbot-setting')" wire:navigate>
-                        {{ __('Chatbot Settings') }}
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="chat-bubble-left-right" :href="route('admin.chat-history')" :current="request()->routeIs('admin.chat-history')" wire:navigate>
+                    @if(auth()->user()->isAdmin())
+                        <flux:sidebar.item icon="book-open" :href="route('admin.knowledge-base')" :current="request()->routeIs('admin.knowledge-base')" wire:navigate>
+                            {{ __('Knowledge Base') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="cog" :href="route('admin.chatbot-setting')" :current="request()->routeIs('admin.chatbot-setting')" wire:navigate>
+                            {{ __('Chatbot Settings') }}
+                        </flux:sidebar.item>
+                    @endif
+                    <flux:sidebar.item icon="chat-bubble-left-right" :href="auth()->user()->isAdmin() ? route('admin.chat-history') : route('supervisor.chat-history')" :current="request()->routeIs('admin.chat-history') || request()->routeIs('supervisor.chat-history')" wire:navigate>
                         {{ __('Chat History') }}
                     </flux:sidebar.item>
+                    @if(auth()->user()->isAdmin())
+                        <flux:sidebar.item icon="users" :href="route('admin.supervisors')" :current="request()->routeIs('admin.supervisors')" wire:navigate>
+                            {{ __('Kelola Akun') }}
+                        </flux:sidebar.item>
+                    @endif
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

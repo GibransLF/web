@@ -165,7 +165,7 @@
                         <flux:icon icon="clock" class="w-5 h-5 text-blue-600" />
                         Percakapan Terakhir
                     </h3>
-                    <a href="{{ route('admin.chat-history') }}" class="text-xs font-semibold text-[#1B287D] hover:underline">Lihat Semua →</a>
+                    <a href="{{ auth()->user()->isAdmin() ? route('admin.chat-history') : route('supervisor.chat-history') }}" class="text-xs font-semibold text-[#1B287D] hover:underline">Lihat Semua →</a>
                 </div>
 
                 <div class="space-y-3">

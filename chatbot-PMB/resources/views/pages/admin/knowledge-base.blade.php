@@ -152,21 +152,11 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
 
     <!-- Flash Alerts -->
     @if (session()->has('success'))
-        <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm flex items-center justify-between dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400">
-            <div class="flex items-center gap-2">
-                <flux:icon icon="check-circle" class="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                <span>{{ session('success') }}</span>
-            </div>
-        </div>
+        <x-alert-banner type="success" :message="session('success')" />
     @endif
 
     @if (session()->has('error'))
-        <div class="p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm flex items-center justify-between dark:bg-red-900/30 dark:border-red-800 dark:text-red-400">
-            <div class="flex items-center gap-2">
-                <flux:icon icon="exclamation-triangle" class="w-5 h-5 text-red-600 dark:text-red-400" />
-                <span>{{ session('error') }}</span>
-            </div>
-        </div>
+        <x-alert-banner type="error" :message="session('error')" />
     @endif
 
     <!-- Page Header -->

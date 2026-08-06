@@ -142,11 +142,11 @@ new #[Title('Chatbot Settings')] class extends Component {
 
     <!-- Notification Alerts -->
     @if (session()->has('success'))
-        <x-settings-alert-banner type="success" :message="session('success')" />
+        <x-alert-banner type="success" :message="session('success')" />
     @endif
 
     @if (session()->has('info'))
-        <x-settings-alert-banner type="info" :message="session('info')" />
+        <x-alert-banner type="info" :message="session('info')" />
     @endif
 
     <form wire:submit.prevent="saveSettings" class="space-y-4 sm:space-y-6">
