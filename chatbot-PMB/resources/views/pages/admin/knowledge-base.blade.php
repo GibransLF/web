@@ -172,6 +172,19 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
         </flux:modal.trigger>
     </div>
 
+    <!-- Guideline Card Teks Lengkap -->
+    <div class="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 rounded-xl text-sm shadow-xs">
+        <div class="flex items-start gap-3">
+            <flux:icon icon="light-bulb" class="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+            <div class="space-y-1">
+                <h4 class="font-bold text-blue-800 dark:text-blue-200">Panduan Format Dokumen (Heading Chunking RAG)</h4>
+                <p class="text-xs text-blue-700/90 dark:text-blue-300/90 leading-relaxed">
+                    Unggah dokumen dalam format <strong>.docx</strong> yang telah menggunakan struktur Heading (Heading 1, Heading 2, dan seterusnya). Sistem akan memanfaatkan struktur heading untuk membagi dokumen menjadi beberapa bagian (chunk) secara lebih akurat sehingga AI dapat memahami konteks setiap topik dan memberikan jawaban yang lebih relevan. Hindari menggunakan teks yang hanya diperbesar atau ditebalkan tanpa menerapkan gaya Heading.
+                </p>
+            </div>
+        </div>
+    </div>
+
     <!-- Filter & Search -->
     <div class="flex items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-xs">
         <div class="relative w-full max-w-sm">
@@ -303,6 +316,10 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
                 <flux:label>Dokumen Word (*.docx)</flux:label>
                 <flux:description>Format wajib: DOCX. Ukuran maksimal: 6MB.</flux:description>
                 <input type="file" wire:model="file" accept=".docx" class="block w-full text-xs text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-zinc-100 file:text-zinc-700 hover:file:bg-zinc-200 dark:file:bg-zinc-800 dark:file:text-zinc-300 dark:hover:file:bg-zinc-700 mt-2" />
+                <p class="text-[11px] text-blue-600 dark:text-blue-400 mt-1.5 flex items-center gap-1.5 font-medium">
+                    <flux:icon icon="information-circle" class="w-3.5 h-3.5 shrink-0" />
+                    <span>Gunakan dokumen .docx berstruktur Heading (Heading 1, 2, dst.) untuk hasil chunking AI yang presisi.</span>
+                </p>
                 <div wire:loading wire:target="file" class="text-xs text-blue-600 dark:text-blue-400 mt-1.5 flex items-center gap-1.5 font-medium">
                     <flux:icon icon="arrow-path" class="w-3.5 h-3.5 animate-spin" />
                     <span>Mengunggah berkas sementara...</span>
