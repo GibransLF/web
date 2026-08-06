@@ -2,6 +2,7 @@ import os
 import tempfile
 import json
 import re
+import time
 import psycopg2
 from datetime import datetime
 from fastapi import UploadFile
@@ -19,6 +20,8 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
     3. Simpan heading di metadata dan di awal chunk.
     4. Simpan chunks & vector embedding ke database PostgreSQL (tabel knowledge_chunks).
     """
+    t_start = time.time()
+    print(f"\n--- [START] Memproses KB: '{filename}' ---")
     temp_path = None
     try:
         # 1. Baca upload file dan simpan ke file temporary
@@ -29,6 +32,7 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
             temp_path = temp_file.name
 
         # 2. Konversi DOCX ke Markdown menggunakan MarkItDown
+        print(f"[1/4] Konversi DOCX -> Markdown (MarkItDown)...")
         markitdown = MarkItDown()
         result = markitdown.convert(temp_path)
         markdown_content = result.text_content
@@ -96,7 +100,10 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
             if len(doc.page_content.strip()) >= 50:
                 docs.append(doc)
 
+        print(f"[2/4] Chunking berbasis Header & Filtering (Hasil: {len(docs)} chunk)...")
+
         if not docs:
+            print(f"[WARNING] Tidak ada chunk valid dari '{filename}'.")
             return 0
 
         # 5. Inisialisasi Embedding Provider (Mode 1: Ollama Lokal | Mode 2: OpenRouter Cloud)
@@ -109,6 +116,7 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
         # )
 
         # MODE 2 (AKTIF): OpenRouter Cloud Embeddings (via langchain_openai OpenAIEmbeddings)
+        print(f"[3/4] Inisialisasi Embedding Model ({settings.OPENROUTER_EMBEDDING_MODEL})...")
         from langchain_openai import OpenAIEmbeddings
         embeddings = OpenAIEmbeddings(
             openai_api_key=settings.OPENROUTER_API_KEY,
@@ -140,6 +148,8 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
         # Hapus chunk lama jika ada
         cur.execute("DELETE FROM knowledge_chunks WHERE knowledge_base_id = %s", (kb_id,))
 
+        print(f"[4/4] Vektorisasi & Simpan {len(docs)} chunk ke PostgreSQL (KB ID: {kb_id})...")
+
         # Hasilkan embedding dan simpan ke knowledge_chunks beserta metadata
         now = datetime.now()
         source_filename = os.path.basename(filename)
@@ -161,9 +171,12 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
         cur.close()
         conn.close()
 
+        t_elapsed = time.time() - t_start
+        print(f"--- [SUCCESS] '{filename}' berhasil diproses ({len(docs)} chunk tersimpan) dalam {t_elapsed:.2f}s ---\n")
         return len(docs)
 
     except Exception as e:
+        print(f"[ERROR] Gagal memproses '{filename}': {str(e)}")
         raise Exception(f"Gagal memproses file: {str(e)}")
     finally:
         if temp_path and os.path.exists(temp_path):
