@@ -35,8 +35,8 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
 
         $storedPath = 'knowledge_bases/' . $fileNameClean;
 
-        // Pengecekan path duplikat
-        if (KnowledgeBase::where('path', $storedPath)->exists()) {
+        // Pengecekan duplikat nama file atau path
+        if (KnowledgeBase::where('filename', $fileNameClean)->orWhere('path', $storedPath)->exists()) {
             $this->addError('file_name', 'Dokumen dengan nama tersebut sudah ada di Knowledge Base.');
             return;
         }
@@ -46,7 +46,7 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
 
         $doc = KnowledgeBase::create([
             'user_id' => auth()->id(),
-            'filename' => $storedPath,
+            'filename' => $fileNameClean,
             'path' => $storedPath,
             'status' => 'processing',
             'deskripsi' => $this->deskripsi,
@@ -59,9 +59,10 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
 
         try {
             $response = Http::timeout($timeout)
-                ->attach('file', $fileContents, basename($storedPath))
+                ->attach('file', $fileContents, $doc->filename)
                 ->post("{$aiServiceUrl}/service/createnewknowledge", [
-                    'filename' => $storedPath,
+                    'knowledge_base_id' => $doc->id,
+                    'filename' => $doc->filename,
                 ]);
 
             if ($response->successful() && $response->json('success')) {
@@ -85,22 +86,23 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
     public function reindexDocument(int $id): void
     {
         $doc = KnowledgeBase::find($id);
-        if (! $doc || ! Storage::disk('local')->exists($doc->filename)) {
+        if (! $doc || ! Storage::disk('local')->exists($doc->path)) {
             session()->flash('error', 'File dokumen tidak ditemukan di penyimpanan lokal.');
             return;
         }
 
         $aiServiceUrl = config('services.ai_service.url', 'http://127.0.0.1:8080');
         $timeout = config('services.ai_service.timeout', 180);
-        $fileContents = Storage::disk('local')->get($doc->filename);
+        $fileContents = Storage::disk('local')->get($doc->path);
 
         $doc->update(['status' => 'processing']);
 
         try {
             $response = Http::timeout($timeout)
-                ->attach('file', $fileContents, basename($doc->path))
+                ->attach('file', $fileContents, $doc->filename)
                 ->post("{$aiServiceUrl}/service/createnewknowledge", [
-                    'filename' => $doc->path,
+                    'knowledge_base_id' => $doc->id,
+                    'filename' => $doc->filename,
                 ]);
 
             if ($response->successful() && $response->json('success')) {
@@ -121,8 +123,8 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
     public function downloadDocument(int $id)
     {
         $doc = KnowledgeBase::find($id);
-        if ($doc && Storage::disk('local')->exists($doc->filename)) {
-            return Storage::disk('local')->download($doc->filename, basename($doc->path));
+        if ($doc && Storage::disk('local')->exists($doc->path)) {
+            return Storage::disk('local')->download($doc->path, $doc->filename);
         }
 
         session()->flash('error', 'Dokumen tidak ditemukan di penyimpanan private.');
@@ -132,8 +134,8 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
     {
         $doc = KnowledgeBase::find($id);
         if ($doc) {
-            if (Storage::disk('local')->exists($doc->filename)) {
-                Storage::disk('local')->delete($doc->filename);
+            if (Storage::disk('local')->exists($doc->path)) {
+                Storage::disk('local')->delete($doc->path);
             }
 
             $doc->delete(); // Chunks di PostgreSQL otomatis terhapus via Foreign Key ON DELETE CASCADE
@@ -209,13 +211,13 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
                 </tr>
             </thead>
             <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
-                @forelse(KnowledgeBase::with('user')->withCount('chunks')->where('path', 'like', '%'.$search.'%')->orWhere('deskripsi', 'like', '%'.$search.'%')->latest()->get() as $doc)
+                @forelse(KnowledgeBase::with('user')->withCount('chunks')->where('filename', 'like', '%'.$search.'%')->orWhere('path', 'like', '%'.$search.'%')->orWhere('deskripsi', 'like', '%'.$search.'%')->latest()->get() as $doc)
                     <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                         <td class="p-3 font-medium">
                             <div class="flex items-start gap-2">
                                 <flux:icon icon="document-text" class="w-5 h-5 text-[#1B287D] dark:text-blue-400 shrink-0 mt-0.5" />
                                 <div>
-                                    <span class="font-semibold text-zinc-900 dark:text-white block">{{ basename($doc->path) }}</span>
+                                    <span class="font-semibold text-zinc-900 dark:text-white block">{{ $doc->filename }}</span>
                                     <div class="flex items-center gap-1 text-[11px] text-zinc-500 font-normal mt-0.5">
                                         <flux:icon icon="user-circle" class="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                                         <span>Diunggah oleh: {{ $doc->user->name ?? 'Sistem' }}</span>
@@ -309,28 +311,25 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
                     placeholder="Contoh: panduan pmb 2026"
                 />
                 <flux:description class="text-xs">Spasi otomatis diubah menjadi underscore (_) saat disimpan.</flux:description>
-                <flux:error name="file_name" />
             </flux:field>
 
             <flux:field>
                 <flux:label>Dokumen Word (*.docx)</flux:label>
                 <flux:description>Format wajib: DOCX. Ukuran maksimal: 2MB.</flux:description>
+                <div wire:loading wire:target="file" class="text-xs text-blue-600 dark:text-blue-400 mt-1.5 flex items-center gap-1.5 font-medium">
+                    <flux:icon icon="arrow-path" class="w-3.5 h-3.5 animate-spin" />
+                    <span>Mengunggah berkas sementara...</span>
+                </div>
                 <input type="file" wire:model="file" accept=".docx" class="block w-full text-xs text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-zinc-100 file:text-zinc-700 hover:file:bg-zinc-200 dark:file:bg-zinc-800 dark:file:text-zinc-300 dark:hover:file:bg-zinc-700 mt-2" />
                 <p class="text-[11px] text-blue-600 dark:text-blue-400 mt-1.5 flex items-center gap-1.5 font-medium">
                     <flux:icon icon="information-circle" class="w-3.5 h-3.5 shrink-0" />
                     <span>Gunakan dokumen .docx berstruktur Heading (Heading 1, 2, dst.) untuk hasil chunking AI yang presisi.</span>
                 </p>
-                <div wire:loading wire:target="file" class="text-xs text-blue-600 dark:text-blue-400 mt-1.5 flex items-center gap-1.5 font-medium">
-                    <flux:icon icon="arrow-path" class="w-3.5 h-3.5 animate-spin" />
-                    <span>Mengunggah berkas sementara...</span>
-                </div>
-                <flux:error name="file" />
             </flux:field>
 
             <flux:field>
                 <flux:label>Deskripsi Singkat (Opsional)</flux:label>
                 <flux:input wire:model="deskripsi" placeholder="Contoh: Rincian biaya SPP dan registrasi ulang PMB 2026" />
-                <flux:error name="deskripsi" />
             </flux:field>
 
             <div class="flex items-center gap-2 pt-2">

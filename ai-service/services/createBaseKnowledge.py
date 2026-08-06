@@ -12,7 +12,7 @@ from langchain_ollama import OllamaEmbeddings
 from config import settings
 from services.db import get_db_connection
 
-def create_base_knowledge(file: UploadFile, filename: str) -> int:
+def create_base_knowledge(file: UploadFile, filename: str, kb_id: int) -> int:
     """
     Logika pemrosesan upload Word (DOCX):
     1. Konversi DOCX ke Markdown via MarkItDown (temp file).
@@ -21,7 +21,7 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
     4. Simpan chunks & vector embedding ke database PostgreSQL (tabel knowledge_chunks).
     """
     t_start = time.time()
-    print(f"\n--- [START] Memproses KB: '{filename}' ---")
+    print(f"\n--- [START] Memproses KB (ID: {kb_id}): '{filename}' ---")
     temp_path = None
     try:
         # 1. Baca upload file dan simpan ke file temporary
@@ -132,18 +132,13 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
         conn = get_db_connection(register_pgvector=True)
         cur = conn.cursor()
 
-        # Cari ID knowledge_bases berdasarkan path
-        cur.execute("SELECT id FROM knowledge_bases WHERE path = %s", (filename,))
+        # Verifikasi ID knowledge_bases resmi yang dikirim dari Laravel
+        cur.execute("SELECT id FROM knowledge_bases WHERE id = %s", (kb_id,))
         row = cur.fetchone()
-        if row:
-            kb_id = row[0]
-        else:
-            now = datetime.now()
-            cur.execute(
-                "INSERT INTO knowledge_bases (filename, path, created_at) VALUES (%s, %s, %s) RETURNING id",
-                (filename, filename, now)
-            )
-            kb_id = cur.fetchone()[0]
+        if not row:
+            raise Exception(f"Dokumen Knowledge Base dengan ID {kb_id} tidak ditemukan di database PostgreSQL.")
+
+        kb_id = row[0]
 
         # Hapus chunk lama jika ada
         cur.execute("DELETE FROM knowledge_chunks WHERE knowledge_base_id = %s", (kb_id,))
@@ -152,11 +147,10 @@ def create_base_knowledge(file: UploadFile, filename: str) -> int:
 
         # Hasilkan embedding dan simpan ke knowledge_chunks beserta metadata
         now = datetime.now()
-        source_filename = os.path.basename(filename)
         for doc in docs:
             vector = embeddings.embed_query(doc.page_content)
             vector_str = json.dumps(vector)
-            meta_dict = {"source": source_filename}
+            meta_dict = {"source": filename}
             meta_dict.update(doc.metadata)
             meta_json = json.dumps(meta_dict)
             cur.execute(

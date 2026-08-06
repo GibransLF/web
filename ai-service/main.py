@@ -22,15 +22,16 @@ async def root():
 @app.post("/service/createnewknowledge")
 async def add_knowledge(
     file: UploadFile = File(...),
-    filename: str = Form(...)
+    filename: str = Form(...),
+    knowledge_base_id: int = Form(...)
 ):
     if not file.filename.endswith(".docx"):
         raise HTTPException(status_code=400, detail="Hanya file DOCX yang didukung saat ini.")
     try:
-        chunks_added = create_base_knowledge(file, filename)
+        chunks_added = create_base_knowledge(file, filename, knowledge_base_id)
         return {
             "success": True,
-            "message": f"Berhasil memproses file '{file.filename}' dengan nama metadata '{filename}'.",
+            "message": f"Berhasil memproses file '{file.filename}' dengan KB ID '{knowledge_base_id}'.",
             "chunks": chunks_added
         }
     except Exception as e:

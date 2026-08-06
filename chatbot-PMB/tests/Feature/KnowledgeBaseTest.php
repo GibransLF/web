@@ -55,7 +55,7 @@ test('valid docx document is renamed based on file_name and saved to private sto
     $doc = KnowledgeBase::where('path', 'knowledge_bases/panduan_pmb_2026.docx')->first();
     expect($doc)->not->toBeNull()
         ->and($doc->path)->toBe('knowledge_bases/panduan_pmb_2026.docx')
-        ->and($doc->filename)->toBe('knowledge_bases/panduan_pmb_2026.docx')
+        ->and($doc->filename)->toBe('panduan_pmb_2026.docx')
         ->and($doc->status)->toBe('success')
         ->and($doc->user_id)->toBe($user->id)
         ->and($doc->user->id)->toBe($user->id)
@@ -119,7 +119,7 @@ test('reindexDocument updates status to success when ai service responds', funct
     $storedPath = $file->storeAs('knowledge_bases', 'retry.docx', 'local');
 
     $doc = KnowledgeBase::create([
-        'filename' => $storedPath,
+        'filename' => 'retry.docx',
         'path' => 'knowledge_bases/retry.docx',
         'status' => 'failed',
     ]);
@@ -193,7 +193,7 @@ test('authenticated user can download private document', function () {
     $storedPath = $file->storeAs('knowledge_bases', 'biaya.docx', 'local');
 
     $doc = KnowledgeBase::create([
-        'filename' => $storedPath,
+        'filename' => 'biaya.docx',
         'path' => 'knowledge_bases/biaya.docx',
         'status' => 'success',
     ]);
@@ -213,7 +213,7 @@ test('authenticated user can delete document and remove from private storage', f
     $storedPath = $file->storeAs('knowledge_bases', 'syarat.docx', 'local');
 
     $doc = KnowledgeBase::create([
-        'filename' => $storedPath,
+        'filename' => 'syarat.docx',
         'path' => 'knowledge_bases/syarat.docx',
         'status' => 'success',
     ]);
