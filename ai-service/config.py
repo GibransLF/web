@@ -22,8 +22,6 @@ class Settings(BaseSettings):
     
     CHUNK_SIZE: int = 600
     CHUNK_OVERLAP: int = 100
-    RETRIEVAL_K: int = 5
-    LLM_TEMPERATURE: float = 0.2
     OLLAMA_TIMEOUT: int = 180
 
     class Config:

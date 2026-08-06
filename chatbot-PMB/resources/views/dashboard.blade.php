@@ -172,7 +172,7 @@
                     @forelse($recentChats as $chat)
                         <div class="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 space-y-1">
                             <div class="flex items-center justify-between text-[11px] text-zinc-400">
-                                <span class="font-mono font-bold text-zinc-600 dark:text-zinc-300">{{ $chat->guest_id }}</span>
+                                <span class="font-mono font-bold text-zinc-600 dark:text-zinc-300">{{ $chat->user ? $chat->user->name : ($chat->guest_id ?? 'Guest') }}</span>
                                 <span>{{ $chat->created_at->diffForHumans() }}</span>
                             </div>
                             <p class="text-xs font-semibold text-zinc-900 dark:text-white truncate">Q: {{ $chat->question }}</p>

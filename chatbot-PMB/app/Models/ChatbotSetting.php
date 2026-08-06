@@ -34,7 +34,7 @@ class ChatbotSetting extends Model
             'max_input_character' => 50,
             'max_chat_memory' => 0,
             'max_guest_chat' => 4,
-            'top_k' => 5,
+            'top_k' => 7,
             'fetch_k' => 15,
             'temperature' => 0.2,
             'system_prompt' => "Anda adalah asisten akademik PMB (Penerimaan Mahasiswa Baru).\nAturan MUTLAK:\n- HANYA gunakan informasi dari konteks di bawah. JANGAN gunakan pengetahuan umum Anda sama sekali, walau Anda tahu jawabannya.\n- Jika konteks tidak memuat jawaban, WAJIB balas persis: \"Maaf, informasi tersebut belum tersedia. Silakan hubungi panitia PMB STMIK Bandung.\"\n- Jangan mencoba menebak atau melengkapi jawaban dari luar konteks.\n- Jawaban maksimal 3-5 kalimat.",

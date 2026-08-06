@@ -146,14 +146,14 @@ test('non docx document is rejected', function () {
         ->assertHasErrors(['file' => 'mimes']);
 });
 
-test('document over 6mb is rejected', function () {
+test('document over 2mb is rejected', function () {
     Storage::fake('local');
     Http::fake();
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    // 7MB = 7168KB > 6144KB limit
-    $file = UploadedFile::fake()->create('large_file.docx', 7168, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    // 3MB = 3072KB > 2048KB limit
+    $file = UploadedFile::fake()->create('large_file.docx', 3072, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
     Livewire::test('pages::admin.knowledge-base')
         ->set('file_name', 'large_file')

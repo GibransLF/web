@@ -17,7 +17,7 @@ return new class extends Migration
             $table->integer('max_input_character')->default(50);
             $table->integer('max_chat_memory')->default(0);
             $table->integer('max_guest_chat')->default(4);
-            $table->integer('top_k')->default(5);
+            $table->integer('top_k')->default(7);
             $table->integer('fetch_k')->default(15);
             $table->float('temperature')->default(0.2);
             $table->text('system_prompt')->nullable();

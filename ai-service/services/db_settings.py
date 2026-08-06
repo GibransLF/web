@@ -16,9 +16,9 @@ def get_chatbot_settings() -> Dict[str, Any]:
     Jika terjadi error atau tabel kosong, mengembalikan nilai fallback default dari config.
     """
     default_config = {
-        "top_k": getattr(settings, "RETRIEVAL_K", 5),
+        "top_k": 7,
         "fetch_k": 15,
-        "temperature": getattr(settings, "LLM_TEMPERATURE", 0.2),
+        "temperature": 0.2,
         "system_prompt": DEFAULT_SYSTEM_PROMPT
     }
     

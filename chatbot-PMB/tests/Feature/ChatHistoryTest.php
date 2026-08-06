@@ -34,6 +34,7 @@ test('chatbot saves pending record and dispatches queue job when user sends mess
     $history = ChatHistory::first();
     expect($history)->not->toBeNull()
         ->and($history->user_id)->toBe($user->id)
+        ->and($history->guest_id)->toBeNull()
         ->and($history->question)->toBe('Berapa biaya pendaftaran PMB?')
         ->and($history->status)->toBe('pending');
 
@@ -105,7 +106,7 @@ test('chat history displays user name for user_id and guest for guest_id', funct
 
     ChatHistory::create([
         'user_id' => $user->id,
-        'guest_id' => 'guest_111',
+        'guest_id' => null,
         'question' => 'Pertanyaan User Admin',
         'answer' => 'Jawaban Admin',
     ]);

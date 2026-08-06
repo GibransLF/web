@@ -123,7 +123,7 @@ new class extends Component {
         $pendingId = (string) Str::uuid();
         $chatHistory = ChatHistory::create([
             'user_id' => auth()->id(),
-            'guest_id' => $this->guestId,
+            'guest_id' => auth()->check() ? null : $this->guestId,
             'question' => $cleanInput,
             'answer' => null,
             'status' => 'pending',

@@ -100,6 +100,7 @@ test('reset defaults restores initial chatbot configuration', function () {
         ->assertSet('max_input_character', 50)
         ->assertSet('max_chat_memory', 0)
         ->assertSet('max_guest_chat', 4)
+        ->assertSet('top_k', 7)
         ->assertSet('temperature', 0.2)
         ->assertSee('Form konfigurasi telah dikembalikan ke nilai default PMB');
 });

@@ -19,7 +19,7 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
 
     protected array $rules = [
         'file_name' => 'required|string|max:255',
-        'file' => 'required|file|mimes:docx|max:6144', // Max 6MB docx
+        'file' => 'required|file|mimes:docx|max:2048', // Max 2MB docx
         'deskripsi' => 'nullable|string|max:255',
     ];
 
@@ -314,7 +314,7 @@ new #[Title('Kelola Knowledge Base')] class extends Component {
 
             <flux:field>
                 <flux:label>Dokumen Word (*.docx)</flux:label>
-                <flux:description>Format wajib: DOCX. Ukuran maksimal: 6MB.</flux:description>
+                <flux:description>Format wajib: DOCX. Ukuran maksimal: 2MB.</flux:description>
                 <input type="file" wire:model="file" accept=".docx" class="block w-full text-xs text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-zinc-100 file:text-zinc-700 hover:file:bg-zinc-200 dark:file:bg-zinc-800 dark:file:text-zinc-300 dark:hover:file:bg-zinc-700 mt-2" />
                 <p class="text-[11px] text-blue-600 dark:text-blue-400 mt-1.5 flex items-center gap-1.5 font-medium">
                     <flux:icon icon="information-circle" class="w-3.5 h-3.5 shrink-0" />
