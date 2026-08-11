@@ -202,7 +202,7 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         # Re-rank menggunakan MMR jika kandidat > actual_k
         if len(candidates) > actual_k:
             cand_embeddings = [c["embedding"] for c in candidates]
-            selected_indices = maximal_marginal_relevance(query_vector, cand_embeddings, k=actual_k, lambda_mult=0.5)
+            selected_indices = maximal_marginal_relevance(query_vector, cand_embeddings, k=actual_k, lambda_mult=0.7)
             docs = [candidates[i] for i in selected_indices]
         else:
             docs = candidates
