@@ -2,7 +2,7 @@ import time
 import json
 import numpy as np
 from typing import List, Optional
-from langchain_ollama import OllamaEmbeddings
+# from langchain_ollama import OllamaEmbeddings # (RAGAS Sementara - Unused import)
 from langchain_openrouter import ChatOpenRouter
 from langchain_core.prompts import ChatPromptTemplate
 from config import settings
@@ -218,8 +218,10 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         
         if docs:
             context = "\n\n".join([doc["page_content"] for doc in docs])
+            retrieved_chunks = [doc["page_content"] for doc in docs] # (RAGAS Sementara)
         else:
             context = "Informasi tidak ditemukan pada basis pengetahuan PMB STMIK Bandung."
+            retrieved_chunks = [] # (RAGAS Sementara)
 
         t3 = time.time()
         print(f" -> Selesai dalam: {t3 - t2:.4f} detik (Dokumen ditemukan: {len(docs)})")
@@ -273,8 +275,11 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
         
         total_time = t7 - start_time
         print(f"--- [END] Total Waktu Proses RAG pgvector: {total_time:.4f} detik ---\n")
-        return response_content, search_query
+        # return response_content, search_query
+        return response_content, search_query, retrieved_chunks # (RAGAS Sementara)
     except Exception as e:
         print(f"[ERROR] Kendala pada alur RAG: {str(e)[:150]}")
         fallback_msg = "Maaf, layanan AI Assistant PMB sedang mengalami antrean tinggi / gangguan sementara. Silakan coba beberapa saat lagi atau hubungi panitia PMB STMIK Bandung."
-        return fallback_msg, newMessage
+        # return fallback_msg, newMessage
+        return fallback_msg, newMessage, [] # (RAGAS Sementara)
+

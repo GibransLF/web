@@ -41,10 +41,17 @@ async def add_knowledge(
 @app.post("/service/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     try:
-        response_text, search_query = chat_rag(
+        # response_text, search_query = chat_rag(
+        #     newMessage=request.newMessage,
+        #     history=request.history or []
+        # )
+
+        # (RAGAS Sementara) Tambahan unpacking 3-tuple untuk mendukung RAGAS Evaluation
+        response_text, search_query, *_ = chat_rag(
             newMessage=request.newMessage,
             history=request.history or []
         )
+
         return ChatResponse(
             success=True,
             response=response_text,

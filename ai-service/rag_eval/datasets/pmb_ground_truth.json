@@ -1,0 +1,50 @@
+[
+  {
+    "question": "kapan pendaftaran dibuka?",
+    "ground_truth": "Batas waktu pendaftaran PMB STMIK Bandung berbeda-beda tergantung jalur yang dipilih. Gelombang 1 Mulai 01 Januari - 30 April, Gelombang 2 Mulai 01 Mei - 31 Juli, Gelombang 3 Mulai 01 Agustus - 31 September."
+  },
+  {
+    "question": "Bagaimana alur pendaftarannya?",
+    "ground_truth": "Membuka Website PMB STMIK Bandung. Membuat akun pendaftaran. Melakukanv erifikasi akun melalui email/WhatsApp (apabila diperlukan). Login ke dashboard pendaftaran. Melengkapi data diri. Memilih Program Studi. Mengunggah seluruh berkas persyaratan. Mengikuti tahapan seleksi sesuai jalur pendaftaran. Menunggu hasil verifikasi dan pengumuman. Melakukan daftar ulang apabila dinyatakan diterima."
+  },
+  {
+    "question": "bagaimana cara membuat akun PMB STMIK Bandung?",
+    "ground_truth": "Untuk membuat akun PMB STMIK Bandung, kamu cukup menuju halaman Pendaftaran https://pmb.stmik-bandung.ac.id/register/. Setelah kamu di halaman Pendaftaran https://pmb.stmik-bandung.ac.id/register/, kamu hanya cukup mengisi sedikit formulir yang diperlukan, seperti : 1. Nama Depan, 2. Nama Belakang, 3. Alamat Email, 4.Kata Sandi, 5. No. Telepon, 6. WhatsApp (Yang Bisa Dihubungi). Cukup mudah bukan?? Ayo Daftar Sekarang Juga!!"
+  },
+  {
+    "question": "Berapa biaya kuliah di STMIK Bandung?",
+    "ground_truth": "Biaya kuliah di STMIK Bandung berbeda-beda tergantung program studi yang dipilih. Bisa langsung menghubungi panitia PMB STMIK Bandung +62 811-2342-113. Pendaftaran Rp. 300,000,- Uang Kuliah Tetap (UKT) Rp. 5,000,000,- Biaya per semester yang mendukung proses pembelajaran, layanan akademik, dan berbagai fasilitas penunjang pendidikan selama masa studi. Untuk memberikan kemudahan pembayaran, UKT dapat dicicil hingga 3 kali, dengan skema 40% saat pengisian KRS, 40% menjelang UTS, dan 20% menjelang UAS. Pengembangan Institusi Rp. 6,000,000,-. Investasi pendidikan yang digunakan untuk meningkatkan kualitas fasilitas, teknologi, dan lingkungan belajar yang modern dan nyaman. Pembayaran dapat dilakukan secara bertahap dan dicicil hingga 2 semester pertama. PSPT ( Pengenalan Sistem Perguruan Tinggi ). Rp. 500,000,- Program pengenalan kampus yang membantu mahasiswa baru mengenal sistem perkuliahan, lingkungan akademik, serta membangun relasi dan pengalaman baru sejak awal perkuliahan. Biaya pendaftaran PMB STMIK Bandung adalah Rp. 500.000,-"
+  },
+  {
+    "question": "Apa saja program studi yang ada di STMIK Bandung?",
+    "ground_truth": "Bandung menyediakan beberapa program studi, yaitu: Program Sarjana: 1. Teknik Informatika, 2. Sistem Informasi"
+  },
+  {
+    "question": "bagaimana cara mendapatkan informasi terbaru PMB STMIK Bandung?",
+    "ground_truth": "Informasi terbaru mengenai PMB STMIK Bandung dapat Anda peroleh melalui website PMB STMIK Bandung, media sosial instagram."
+  },
+  {
+    "question": "dimana lokasi STMIK Bandung?",
+    "ground_truth": "Jl. Cikutra No.113, Bandung Kota Bandung, Jawa Barat 40124."
+  },
+  {
+    "question": "bagaimana cara menghubungi panitia PMB langsung",
+    "ground_truth": "Berikut merupakan kontak yang bisa dihubungi: Alamat: Jl. Cikutra No.113, Bandung Kota Bandung, Jawa Barat 40124 Indonesia .Telp: 022-7207777 .E-Mail: marketing@stmik-bandung.ac.id .Telepon / WhatsApp: 0811-2342-113"
+  },
+  {
+    "question": "apakah ada seleksi?",
+    "ground_truth": "Setiap jalur memiliki mekanisme seleksi yang berbeda. Untuk jalur yang menggunakan seleksi, peserta wajib mengikuti seluruh tahapan sesuai jadwal yang telah ditentukan."
+  },
+  {
+    "question": "bagaimana cara saya tau jika diterima lulus seleksi?",
+    "ground_truth": "SHasil seleksi akan diinformasikan melalui: Dashboard PMB, WhatsApp, Email (apabila tersedia)"
+  },
+  {
+    "question": "apa saja syarat pendaftarannya?",
+    "ground_truth": "Calon mahasiswa baru wajib memenuhi persyaratan sebagai berikut: Lulusan SMA/SMK/MA atau sederajat. Mengisi formulir pendaftaran melalui website PMB STMIK Bandung. Mengunggah dokumen persyaratan sesuai ketentuan pada dashboard pendaftaran. Memastikan seluruh data yang diinput benar dan dapat dipertanggungjawabkan. Syarat-syarat pendaftaran PMB STMIK Bandung berbeda-beda tergantung jalur yang dipilih. Syarat Pendaftaran: 1. Melampirkan Ijazah dan Transkrip Nilai atau Rapot kelas. 2. Foto formal 3x4 dan 4x6. 3. Sertifikat Keahlian/kejuaraan. 4. KTP. 5. SKHUN. 6. KK. 7. Akta Kelahiran"
+  },
+  {
+    "question": "apakah itu STMIK Bandung?",
+    "ground_truth": "STMIK Bandung merupakan STMIK pertama di Jawa Barat dan pelopor pendidikan tinggi informatika swasta dengan fokus untuk mencetak tenaga profesional dan technopreneur IT."
+  }
+]
