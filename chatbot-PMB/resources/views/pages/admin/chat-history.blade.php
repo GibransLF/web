@@ -31,11 +31,11 @@ new #[Title('Chat History')] class extends Component {
 
         if (! empty($this->search)) {
             $query->where(function ($q) {
-                $q->where('guest_id', 'like', '%'.$this->search.'%')
-                    ->orWhere('question', 'like', '%'.$this->search.'%')
-                    ->orWhere('answer', 'like', '%'.$this->search.'%')
+                $q->where('guest_id', 'ilike', '%'.$this->search.'%')
+                    ->orWhere('question', 'ilike', '%'.$this->search.'%')
+                    ->orWhere('answer', 'ilike', '%'.$this->search.'%')
                     ->orWhereHas('user', function ($uq) {
-                        $uq->where('name', 'like', '%'.$this->search.'%');
+                        $uq->where('name', 'ilike', '%'.$this->search.'%');
                     });
             });
         }

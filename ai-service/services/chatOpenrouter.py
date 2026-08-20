@@ -103,6 +103,7 @@ def chat_rag(newMessage: str, history: List[ChatHistoryItem] = None, k: Optional
         # 0. Load chatbot settings dari PostgreSQL
         bot_settings = get_chatbot_settings()
         actual_k = k if k is not None else bot_settings["top_k"]
+        # actual_k = 15
         actual_fetch_k = fetch_k if fetch_k is not None else bot_settings["fetch_k"]
         temperature = bot_settings["temperature"]
         system_prompt = bot_settings["system_prompt"]
