@@ -30,12 +30,13 @@ new #[Title('Chat History')] class extends Component {
         $query = ChatHistory::with('user');
 
         if (! empty($this->search)) {
-            $query->where(function ($q) {
-                $q->where('guest_id', 'ilike', '%'.$this->search.'%')
-                    ->orWhere('question', 'ilike', '%'.$this->search.'%')
-                    ->orWhere('answer', 'ilike', '%'.$this->search.'%')
-                    ->orWhereHas('user', function ($uq) {
-                        $uq->where('name', 'ilike', '%'.$this->search.'%');
+            $likeOp = \Illuminate\Support\Facades\DB::getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where(function ($q) use ($likeOp) {
+                $q->where('guest_id', $likeOp, '%'.$this->search.'%')
+                    ->orWhere('question', $likeOp, '%'.$this->search.'%')
+                    ->orWhere('answer', $likeOp, '%'.$this->search.'%')
+                    ->orWhereHas('user', function ($uq) use ($likeOp) {
+                        $uq->where('name', $likeOp, '%'.$this->search.'%');
                     });
             });
         }
@@ -67,6 +68,9 @@ new #[Title('Chat History')] class extends Component {
             </flux:modal.trigger>
         @endif
     </div>
+
+    <!-- Alert for Unanswered / Unvalidated Questions -->
+    <livewire:admin.unanswered-questions-alert />
 
     <!-- Search Filter & Counter Bar -->
     <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-xs">

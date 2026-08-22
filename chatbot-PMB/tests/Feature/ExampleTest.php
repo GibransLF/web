@@ -18,4 +18,3 @@ test('returns successful response for chat route with home button', function () 
     $response->assertOk()
         ->assertSee('Kembali ke Home');
 });
-

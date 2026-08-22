@@ -12,6 +12,10 @@ class ChatHistory extends Model
 
     public const UPDATED_AT = null;
 
+    protected $attributes = [
+        'is_validated' => false,
+    ];
+
     protected $fillable = [
         'user_id',
         'guest_id',
@@ -19,6 +23,11 @@ class ChatHistory extends Model
         'answer',
         'status',
         'pending_id',
+        'is_validated',
+    ];
+
+    protected $casts = [
+        'is_validated' => 'boolean',
     ];
 
     public function user(): BelongsTo

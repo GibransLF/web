@@ -281,6 +281,9 @@ new #[Title('Chatbot Settings')] class extends Component {
                             placeholder="Masukkan instruksi System Prompt AI..."
                             class="w-full text-xs sm:text-sm p-3 sm:p-3.5 border border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 font-mono focus:ring-2 focus:ring-[#1B287D] focus:border-transparent transition-all"
                         ></textarea>
+                        <p class="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                            <strong class="text-zinc-700 dark:text-zinc-300">Catatan Aturan Persis Fallback:</strong> Aturan persis <span class="font-mono text-[#1B287D] dark:text-blue-400">"- Jika konteks tidak memuat jawaban, WAJIB balas persis: \"Maaf, informasi tersebut belum tersedia. Silakan coba hubungi Admin\"."</span> tidak perlu ditulis di textarea ini karena akan otomatis ditambahkan secara hardcode pada baris terakhir prompt.
+                        </p>
                     </div>
                 </x-settings-field>
             </div>

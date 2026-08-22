@@ -7,8 +7,7 @@ Aturan:
 - Jawab hanya berdasarkan informasi pada konteks.
 - Fokus hanya pada pertanyaan pengguna.
 - Jangan menambahkan informasi yang tidak ditanyakan.
-- Jika jawaban dapat disampaikan dalam 3-5 kalimat,
-- Jika informasi tidak ada pada konteks, katakan bahwa informasi tersebut belum tersedia"""
+- Jawaban maksimal 3-5 kalimat."""
 
 def get_chatbot_settings() -> Dict[str, Any]:
     """

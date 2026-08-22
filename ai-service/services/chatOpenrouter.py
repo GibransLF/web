@@ -11,24 +11,65 @@ from services.db_settings import get_chatbot_settings
 from services.db import get_db_connection
 
 # Batas maksimal Cosine Distance (0.0 = persis identik, >0.65 = kurang relevan)
-DISTANCE_THRESHOLD = 0.65
+DISTANCE_THRESHOLD = 0.6
 
-# 1. Definisikan ChatPromptTemplate untuk Kondensasi Pertanyaan
+FALLBACK_SYSTEM_PROMPT_RULE = '- Jika konteks tidak memuat jawaban, WAJIB balas persis: "Maaf, informasi tersebut belum tersedia. Silakan coba hubungi Admin".'
+
+def add_default_system_prompt(base_prompt: str = "") -> str:
+    """
+    Menggabungkan base_prompt (dari DB/User) dengan aturan hardcoded fallback di baris paling akhir.
+    Jika base_prompt kosong, menggunakan aturan hardcoded sebagai prompt dasar.
+    """
+    clean_prompt = (base_prompt or "").strip()
+    if FALLBACK_SYSTEM_PROMPT_RULE not in clean_prompt:
+        if clean_prompt:
+            return f"{clean_prompt}\n{FALLBACK_SYSTEM_PROMPT_RULE}"
+        else:
+            return f"Anda adalah asisten akademik PMB (Penerimaan Mahasiswa Baru).\nAturan MUTLAK:\n{FALLBACK_SYSTEM_PROMPT_RULE}"
+    return clean_prompt
+
+
+# 1. Definisikan ChatPromptTemplate untuk Kondensasi Pertanyaan (Dengan History)
 condense_prompt_template = ChatPromptTemplate.from_messages([
     (
         "system",
-        """
-Tugasmu HANYA menulis ulang pertanyaan menjadi pertanyaan mandiri.
+        """Anda mengubah pertanyaan lanjutan calon mahasiswa, beserta riwayat percakapan, menjadi satu pertanyaan mandiri (standalone) untuk retrieval RAG PMB STMIK Bandung.
 
-Aturan:
-- Jangan menjawab pertanyaan.
-- Jangan memberi penjelasan.
-- Jangan memberi informasi tambahan.
-- Output HARUS berupa 1 kalimat pertanyaan.
-- Jika pertanyaan sudah mandiri, kembalikan persis apa adanya.
-"""
+Instruksi:
+- Pertahankan bahasa asli pertanyaan terakhir pengguna
+- Perbaiki typo dan susunan kalimat yang ambigu, buang basa-basi
+- Selesaikan rujukan implisit berdasarkan riwayat
+- Jika pertanyaan terakhir adalah topik baru yang TIDAK berkaitan dengan riwayat, JANGAN memaksakan konteks lama masuk
+- Selaraskan istilah dengan terminologi umum brosur PMB (jadwal, syarat, biaya, jalur, program studi, beasiswa) bila relevan
+- Jangan menjawab pertanyaan, jangan menambah asumsi di luar riwayat
+- Keluarkan hanya pertanyaan mandiri, tanpa penjelasan tambahan"""
     ),
-    ("human", "Riwayat:\n{history}\n\nPertanyaan:\n{newMessage}")
+    (
+        "human",
+        """Riwayat percakapan:
+{chat_history}
+
+Pertanyaan lanjutan pengguna:
+{newMessage}
+
+Pertanyaan mandiri:"""
+    )
+])
+
+# 2. Definisikan ChatPromptTemplate untuk Query Rewriting Pertanyaan (Tanpa History)
+query_rewrite_prompt_template = ChatPromptTemplate.from_messages([
+    (
+        "system",
+        """Anda mengoptimalkan pertanyaan calon mahasiswa menjadi query pencarian untuk sistem retrieval RAG PMB STMIK Bandung.
+
+Instruksi:
+- Pertahankan bahasa asli pertanyaan pengguna
+- Perbaiki typo dan susunan kalimat yang ambigu, buang basa-basi
+- Pertahankan istilah spesifik apa adanya: nama program studi, nama jalur seleksi, gelombang pendaftaran, nominal biaya, tanggal
+- Selaraskan istilah dengan terminologi umum brosur PMB (jadwal, syarat, biaya, jalur, program studi, beasiswa) bila relevan
+- Jangan menjawab pertanyaan, keluarkan hanya query hasil optimasi tanpa penjelasan tambahan"""
+    ),
+    ("human", "Pertanyaan pengguna:\n{question}")
 ])
 
 def format_query_for_embedding(query: str) -> str:
@@ -37,12 +78,15 @@ def format_query_for_embedding(query: str) -> str:
 
 def condense_pmb_question(newMessage: str, history: List[ChatHistoryItem], llm: ChatOpenRouter) -> str:
     try:
-        history_str = ""
+        chat_history = ""
         for item in history:
-            history_str += f"Calon Mahasiswa: {item.question}\nAsisten PMB: {item.answer}\n"
+            q = getattr(item, 'question', item.get('question') if isinstance(item, dict) else '')
+            a = getattr(item, 'answer', item.get('answer') if isinstance(item, dict) else '')
+            if q and a:
+                chat_history += f"Calon Mahasiswa: {q}\nAsisten PMB: {a}\n"
             
         formatted_messages = condense_prompt_template.format_messages(
-            history=history_str,
+            chat_history=chat_history,
             newMessage=newMessage
         )
         
@@ -51,6 +95,18 @@ def condense_pmb_question(newMessage: str, history: List[ChatHistoryItem], llm: 
     except Exception as e:
         print(f"[WARNING] Kondensasi riwayat pertanyaan gagal: {str(e)[:100]}. Menggunakan pertanyaan awal.")
         return newMessage
+
+def rewrite_pmb_query(question: str, llm: ChatOpenRouter) -> str:
+    try:
+        formatted_messages = query_rewrite_prompt_template.format_messages(
+            question=question
+        )
+        
+        response = llm.invoke(formatted_messages)
+        return response.content.strip()
+    except Exception as e:
+        print(f"[WARNING] Query rewriting gagal: {str(e)[:100]}. Menggunakan pertanyaan awal.")
+        return question
 
 def maximal_marginal_relevance(query_embedding: list[float], candidate_embeddings: list[np.ndarray], k: int = 5, lambda_mult: float = 0.5) -> list[int]:
     """
@@ -106,7 +162,7 @@ def chat_rag(newMessage: str, history: List[ChatHistoryItem] = None, k: Optional
         # actual_k = 15
         actual_fetch_k = fetch_k if fetch_k is not None else bot_settings["fetch_k"]
         temperature = bot_settings["temperature"]
-        system_prompt = bot_settings["system_prompt"]
+        system_prompt = add_default_system_prompt(bot_settings.get("system_prompt", ""))
 
         print(f"[Settings DB] top_k={actual_k}, fetch_k={actual_fetch_k}, temperature={temperature}")
 
@@ -149,7 +205,7 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
             temperature=temperature
         )
         
-        # 2. Kondensasi pertanyaan jika ada history percakapan
+        # 2. Kondensasi pertanyaan jika ada history, atau Query Rewriting jika tanpa history
         if history:
             t_condense_start = time.time()
             print("[Step 1.5] Kondensasi Pertanyaan (Meringkas Riwayat)...")
@@ -158,7 +214,12 @@ Pertanyaan Calon Mahasiswa: {search_query}""")
             print(f" -> Hasil Standalone Query: '{search_query}'")
             print(f" -> Selesai dalam: {t_condense_end - t_condense_start:.4f} detik")
         else:
-            search_query = newMessage
+            t_rewrite_start = time.time()
+            print("[Step 1.5] Query Rewriting Pertanyaan (Tanpa History)...")
+            search_query = rewrite_pmb_query(newMessage, llm)
+            t_rewrite_end = time.time()
+            print(f" -> Hasil Query Rewriting: '{search_query}'")
+            print(f" -> Selesai dalam: {t_rewrite_end - t_rewrite_start:.4f} detik")
             
         # 3. Ambil Dokumen PMB dari PostgreSQL (knowledge_chunks) menggunakan pgvector Adapter + HNSW Index
         t2 = time.time()
