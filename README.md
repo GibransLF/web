@@ -36,7 +36,7 @@ Pastikan perangkat lunak berikut telah terpasang pada komputer Anda sebelum memu
 
 - **Git**
 - **PHP >= 8.3** dengan ekstensi aktif:
-  - `pdo_sqlite` (atau `pdo_mysql` jika menggunakan MySQL)
+  - `pdo_pgsql` & `pgsql`
   - `mbstring`
   - `curl`
   - `fileinfo`
@@ -172,14 +172,21 @@ Buka terminal baru atau pindah direktori ke folder `chatbot-PMB`:
    ```
 
 5. **Konfigurasi Database & Service**:
-   Buka file `.env` di dalam folder `chatbot-PMB/`. Secara default aplikasi menggunakan **SQLite**:
-   - Jika menggunakan SQLite, pastikan file database tersedia (Laravel biasanya akan menawarkan membuat file ini secara otomatis saat migrasi, atau Anda dapat membuatnya manual di `database/database.sqlite`).
-   - Pastikan variabel koneksi AI Service dan Queue sesuai:
-     ```env
-     QUEUE_CONNECTION=database
-     AI_SERVICE_URL=http://127.0.0.1:8080
-     AI_SERVICE_TIMEOUT=180
-     ```
+   Buka file `.env` di dalam folder `chatbot-PMB/`. Aplikasi menggunakan database **PostgreSQL** yang sama dengan `ai-service` (`pmb-rag`). Sesuaikan konfigurasi koneksi database:
+   ```env
+   DB_CONNECTION=pgsql
+   DB_HOST=127.0.0.1
+   DB_PORT=5432
+   DB_DATABASE=pmb-rag
+   DB_USERNAME=postgres
+   DB_PASSWORD=password_postgres_anda
+   ```
+   Pastikan juga variabel koneksi AI Service dan Queue sesuai:
+   ```env
+   QUEUE_CONNECTION=database
+   AI_SERVICE_URL=http://127.0.0.1:8080
+   AI_SERVICE_TIMEOUT=180
+   ```
 
 6. Jalankan migrasi database beserta seeder data awal:
    ```bash
@@ -201,7 +208,7 @@ Proses `db:seed` telah membuatkan akun pengguna default untuk pengujian:
 | Role / Peran | Email | Password | Hak Akses |
 |---|---|---|---|
 | **Administrator PMB** | `admin@test.com` | `wasdwasd` | Kelola Dokumen Knowledge Base, Pengaturan Bot, Manajemen User |
-| **Supervisor PMB** | `supervisior1@test.com` | `plokijuh.` | Monitoring Riwayat Chat, Validasi & Evaluasi Respon AI |
+| **Supervisor PMB** | - | - | Monitoring Riwayat Chat, Validasi & Evaluasi Respon AI |
 
 ---
 
